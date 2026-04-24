@@ -237,6 +237,49 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 @keyframes spin{to{transform:rotate(360deg);}}
 .loading-wrap{padding:60px 20px;text-align:center;color:var(--text2);font-size:14px;}
 .loading-wrap .spin{margin-bottom:14px;}
+
+/* FINISH BAR */
+.finish-bar{position:absolute;bottom:0;left:0;right:0;padding:12px 16px calc(var(--safe-bot) + 12px);background:linear-gradient(to top,var(--bg) 75%,transparent);z-index:20;display:flex;gap:10px;pointer-events:none;}
+.finish-bar > *{pointer-events:all;}
+.btn-finish{flex:1;background:var(--accent);color:#000;border:none;border-radius:30px;padding:16px;font-size:16px;font-weight:800;cursor:pointer;}
+.btn-finish:active{opacity:.85;transform:scale(.98);}
+.btn-abandon{background:none;border:1px solid var(--border2);color:var(--text3);border-radius:30px;padding:16px 18px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.btn-abandon:active{opacity:.7;}
+
+/* CONFIRM SHEET */
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:150;display:flex;align-items:flex-end;justify-content:center;}
+.confirm-overlay.hidden{display:none;}
+.confirm-sheet{background:var(--surface);border-radius:24px 24px 0 0;padding:24px 20px calc(var(--safe-bot) + 20px);width:100%;max-width:480px;}
+.confirm-title{font-size:18px;font-weight:800;margin-bottom:8px;text-align:center;}
+.confirm-sub{font-size:13px;color:var(--text2);text-align:center;margin-bottom:20px;line-height:1.5;}
+.confirm-row{display:flex;gap:10px;margin-bottom:20px;}
+.confirm-stat{flex:1;background:var(--surface2);border-radius:var(--rsm);padding:12px 8px;text-align:center;}
+.confirm-stat-val{font-size:20px;font-weight:800;color:var(--accent);}
+.confirm-stat-lbl{font-size:10px;color:var(--text3);margin-top:2px;}
+.btn-confirm{width:100%;background:var(--accent);color:#000;border:none;border-radius:30px;padding:16px;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:10px;}
+.btn-cancel{width:100%;background:none;border:1px solid var(--border2);color:var(--text);border-radius:30px;padding:14px;font-size:14px;font-weight:600;cursor:pointer;}
+
+/* SHARE CARD */
+.share-outer{padding:0 20px 16px;}
+.share-card{background:#111;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+.sc-header{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);}
+.sc-logo{font-size:11px;font-weight:800;letter-spacing:2px;color:var(--accent);}
+.sc-date{font-size:11px;color:var(--text3);}
+.sc-body{padding:16px;}
+.sc-workout{font-size:20px;font-weight:800;margin-bottom:2px;}
+.sc-week{font-size:12px;color:var(--text2);margin-bottom:14px;}
+.sc-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;}
+.sc-stat{background:var(--surface2);border-radius:var(--rsm);padding:10px 6px;text-align:center;}
+.sc-stat-val{font-size:18px;font-weight:800;color:var(--accent);}
+.sc-stat-lbl{font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.5px;}
+.sc-exlist{border-top:1px solid var(--border);padding-top:12px;}
+.sc-ex{display:flex;justify-content:space-between;padding:5px 0;font-size:12px;border-bottom:1px solid rgba(255,255,255,.04);}
+.sc-ex-name{color:var(--text2);flex:1;padding-right:8px;}
+.sc-ex-val{color:var(--text);font-weight:700;white-space:nowrap;}
+.sc-footer{background:var(--surface2);padding:10px 16px;font-size:10px;color:var(--text3);text-align:center;letter-spacing:.5px;}
+.share-btns{display:flex;gap:8px;margin-top:12px;}
+.btn-share{flex:1;background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:var(--rsm);padding:13px 8px;font-size:13px;font-weight:700;cursor:pointer;text-align:center;}
+.btn-share:active{opacity:.7;}
 </style>
 </head>
 <body>
@@ -347,7 +390,22 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
     <div class="prog-bar-bg"><div class="prog-bar-fill" id="prog-fill" style="width:0%"></div></div>
     <div class="prog-labels"><span id="prog-left">0 sets done</span><span id="prog-right">0 remaining</span></div>
   </div>
-  <div class="body" id="w-body"></div>
+  <div class="body" id="w-body" style="padding-bottom:80px;"></div>
+  <div class="finish-bar">
+    <button class="btn-abandon" onclick="goHome()">✕ Exit</button>
+    <button class="btn-finish" onclick="openConfirm()">Finish &amp; Save Workout →</button>
+  </div>
+</div>
+
+<!-- ══ CONFIRM FINISH ══ -->
+<div class="confirm-overlay hidden" id="confirm-overlay" onclick="closeConfirm(event)">
+  <div class="confirm-sheet">
+    <div class="confirm-title">Finish Workout?</div>
+    <div class="confirm-sub" id="confirm-sub">Log this session and save your progress.</div>
+    <div class="confirm-row" id="confirm-row"></div>
+    <button class="btn-confirm" onclick="confirmFinish()">✓ Save &amp; Finish</button>
+    <button class="btn-cancel" onclick="closeConfirm()">Keep Going</button>
+  </div>
 </div>
 
 <!-- ══ COMPLETE ══ -->
@@ -357,12 +415,33 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
     <div style="flex:1"><div class="hdr-title">Session Complete</div></div>
   </div>
   <div class="body">
-    <div class="done-wrap">
+    <div class="done-wrap" style="padding-bottom:8px;">
       <div class="done-icon">💪</div>
       <div class="done-title" id="done-title">Done!</div>
       <div class="done-sub" id="done-sub"></div>
       <div class="done-stats" id="done-stats"></div>
       <div class="save-status" id="save-status"></div>
+    </div>
+    <div class="share-outer">
+      <div class="share-card" id="share-card">
+        <div class="sc-header">
+          <div class="sc-logo">GYMDASH</div>
+          <div class="sc-date" id="sc-date"></div>
+        </div>
+        <div class="sc-body">
+          <div class="sc-workout" id="sc-workout"></div>
+          <div class="sc-week" id="sc-week"></div>
+          <div class="sc-stats" id="sc-stats"></div>
+          <div class="sc-exlist" id="sc-exlist"></div>
+        </div>
+        <div class="sc-footer">GYMDASH · ESTHER GYM APP · github.com/AZDVHS/EstherGymApp</div>
+      </div>
+      <div class="share-btns">
+        <button class="btn-share" onclick="shareSession()">&#128228; Share</button>
+        <button class="btn-share" onclick="copyShareText()">&#128203; Copy Stats</button>
+      </div>
+    </div>
+    <div style="padding:0 20px 40px;display:flex;flex-direction:column;gap:10px;">
       <button class="btn-primary" onclick="goHome()">Back to Workouts</button>
       <button class="btn-secondary" onclick="restartWorkout()">Repeat Session</button>
     </div>
@@ -841,7 +920,8 @@ function updateProgress() {
   document.getElementById('prog-fill').style.width = pct+'%';
   document.getElementById('prog-left').textContent = `${done} sets done`;
   document.getElementById('prog-right').textContent = `${total-done} remaining`;
-  if (done===total && total>0) setTimeout(showComplete, 700);
+  // Auto-open confirm when all sets done
+  if (done===total && total>0) setTimeout(openConfirm, 700);
 }
 
 // ═══════════════════════════════════════════════
@@ -872,23 +952,64 @@ function addRest(s) { restRemain+=s; restTotal+=s; }
 function clearRest() { if(restTimer){clearTimeout(restTimer);restTimer=null;} }
 
 // ═══════════════════════════════════════════════
+// CONFIRM SHEET
+// ═══════════════════════════════════════════════
+function openConfirm() {
+  let total=0, done=0, vol=0;
+  Object.values(setData).forEach(sets => {
+    total += sets.length;
+    done  += sets.filter(s=>s.done).length;
+    sets.forEach(s => { if(s.weight) vol += parseFloat(s.weight)||0; });
+  });
+  const elapsed = Math.round((Date.now() - sessionStart) / 60000);
+  const pct = total>0 ? Math.round((done/total)*100) : 0;
+
+  document.getElementById('confirm-sub').textContent =
+    pct < 100
+      ? `${done}/${total} sets completed (${pct}%). You can still save partial progress.`
+      : 'All sets complete — great session!';
+
+  document.getElementById('confirm-row').innerHTML = `
+    <div class="confirm-stat"><div class="confirm-stat-val">${done}</div><div class="confirm-stat-lbl">Sets done</div></div>
+    <div class="confirm-stat"><div class="confirm-stat-val">${Math.round(vol).toLocaleString()}</div><div class="confirm-stat-lbl">lbs logged</div></div>
+    <div class="confirm-stat"><div class="confirm-stat-val">${elapsed}</div><div class="confirm-stat-lbl">minutes</div></div>`;
+
+  document.getElementById('confirm-overlay').classList.remove('hidden');
+}
+
+function closeConfirm(e) {
+  if (e && e.target !== document.getElementById('confirm-overlay')) return;
+  document.getElementById('confirm-overlay').classList.add('hidden');
+}
+
+async function confirmFinish() {
+  document.getElementById('confirm-overlay').classList.add('hidden');
+  await showComplete();
+}
+
+// ═══════════════════════════════════════════════
 // SESSION COMPLETE + SAVE
 // ═══════════════════════════════════════════════
 async function showComplete() {
   skipRest();
-  let totalSets=0, totalVol=0;
+  let totalSets=0, totalVol=0, doneSets=0;
   Object.values(setData).forEach(sets => {
     totalSets += sets.length;
-    sets.forEach(s => { if(s.weight) totalVol += (parseFloat(s.weight)||0) * 1; });
+    doneSets  += sets.filter(s=>s.done).length;
+    sets.forEach(s => { if(s.weight) totalVol += (parseFloat(s.weight)||0); });
   });
   const elapsed = Math.round((Date.now() - sessionStart) / 60000);
+  const volRounded = Math.round(totalVol);
 
-  document.getElementById('done-title').textContent = currentWorkout.name + ' Done!';
+  document.getElementById('done-title').textContent = currentWorkout.name + ' — Done!';
   document.getElementById('done-sub').textContent = `${currentWorkout.week} · ${currentWorkout.tag} — Rest up and come back stronger.`;
   document.getElementById('done-stats').innerHTML = `
-    <div class="done-stat"><div class="done-stat-val">${totalSets}</div><div class="done-stat-lbl">Sets</div></div>
-    <div class="done-stat"><div class="done-stat-val">${Math.round(totalVol).toLocaleString()}</div><div class="done-stat-lbl">lbs logged</div></div>
-    <div class="done-stat"><div class="done-stat-val">${elapsed}</div><div class="done-stat-lbl">minutes</div></div>`;
+    <div class="done-stat"><div class="done-stat-val">${doneSets}</div><div class="done-stat-lbl">Sets Done</div></div>
+    <div class="done-stat"><div class="done-stat-val">${volRounded.toLocaleString()}</div><div class="done-stat-lbl">lbs Logged</div></div>
+    <div class="done-stat"><div class="done-stat-val">${elapsed}</div><div class="done-stat-lbl">Minutes</div></div>`;
+
+  // Build share card
+  buildShareCard(doneSets, volRounded, elapsed);
 
   const statusEl = document.getElementById('save-status');
   showScreen('s-complete');
@@ -906,8 +1027,8 @@ async function showComplete() {
       workout_name: currentWorkout.name,
       week_label: currentWorkout.week,
       tag: currentWorkout.tag,
-      sets_completed: totalSets,
-      total_volume_lbs: Math.round(totalVol),
+      sets_completed: doneSets,
+      total_volume_lbs: volRounded,
       duration_minutes: elapsed,
       set_log: setData
     });
@@ -916,6 +1037,82 @@ async function showComplete() {
   } catch(e) {
     statusEl.textContent = '✗ Save failed: ' + e.message;
     statusEl.style.color = 'var(--red)';
+  }
+}
+
+// ═══════════════════════════════════════════════
+// SHARE CARD
+// ═══════════════════════════════════════════════
+function buildShareCard(doneSets, vol, elapsed) {
+  const now = new Date();
+  document.getElementById('sc-date').textContent = now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  document.getElementById('sc-workout').textContent = currentWorkout.name;
+  document.getElementById('sc-week').textContent = `${currentWorkout.week} · ${currentWorkout.tag} · ${currentWorkout.model||currentWorkout.focus}`;
+  document.getElementById('sc-stats').innerHTML = `
+    <div class="sc-stat"><div class="sc-stat-val">${doneSets}</div><div class="sc-stat-lbl">Sets</div></div>
+    <div class="sc-stat"><div class="sc-stat-val">${vol.toLocaleString()}</div><div class="sc-stat-lbl">lbs</div></div>
+    <div class="sc-stat"><div class="sc-stat-val">${elapsed}</div><div class="sc-stat-lbl">min</div></div>`;
+
+  // Per-exercise weight summary
+  let exRows = '';
+  currentWorkout.phases.forEach((p,pi) => {
+    if (!p.exercises) return;
+    p.exercises.forEach((ex,ei) => {
+      const sets = setData[`${pi}-${ei}`] || [];
+      const weights = sets.filter(s=>s.done && s.weight).map(s=>s.weight+'lbs');
+      if (!weights.length) return;
+      const maxW = Math.max(...weights.map(w=>parseFloat(w)));
+      exRows += `<div class="sc-ex">
+        <div class="sc-ex-name">${ex.name}</div>
+        <div class="sc-ex-val">${sets.filter(s=>s.done).length}×${ex.reps} · top ${maxW}lbs</div>
+      </div>`;
+    });
+  });
+  document.getElementById('sc-exlist').innerHTML = exRows || '<div style="color:var(--text3);font-size:12px;">No weight data logged</div>';
+}
+
+function buildShareText() {
+  const done = Object.values(setData).flat().filter(s=>s.done).length;
+  const vol = Math.round(Object.values(setData).flat().reduce((a,s)=>a+(parseFloat(s.weight)||0),0));
+  const elapsed = Math.round((Date.now()-sessionStart)/60000);
+  const date = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+
+  let lines = [
+    `💪 GYMDASH — ${date}`,
+    `${currentWorkout.name} · ${currentWorkout.week} · ${currentWorkout.tag}`,
+    ``,
+    `Sets: ${done}  |  Volume: ${vol.toLocaleString()} lbs  |  Time: ${elapsed} min`,
+    ``
+  ];
+  currentWorkout.phases.forEach((p,pi) => {
+    if (!p.exercises) return;
+    p.exercises.forEach((ex,ei) => {
+      const sets = (setData[`${pi}-${ei}`]||[]).filter(s=>s.done&&s.weight);
+      if (!sets.length) return;
+      const maxW = Math.max(...sets.map(s=>parseFloat(s.weight)));
+      lines.push(`• ${ex.name}: ${sets.length}×${ex.reps} @ ${maxW}lbs`);
+    });
+  });
+  lines.push(``, `Tracked with GymDash · github.com/AZDVHS/EstherGymApp`);
+  return lines.join('\n');
+}
+
+async function shareSession() {
+  const text = buildShareText();
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'GymDash Workout', text });
+    } catch(e) { if (e.name !== 'AbortError') copyShareText(); }
+  } else { copyShareText(); }
+}
+
+async function copyShareText() {
+  const text = buildShareText();
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('Stats copied to clipboard ✓', false);
+  } catch(e) {
+    showToast('Copy failed — try long-pressing', true);
   }
 }
 
