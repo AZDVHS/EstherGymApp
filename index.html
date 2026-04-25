@@ -220,18 +220,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .toast.err{background:var(--red);}
 
 /* SETUP */
-.setup-wrap{padding:24px 20px;}
-.setup-title{font-size:20px;font-weight:800;margin-bottom:8px;}
-.setup-sub{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:24px;}
-.setup-field{margin-bottom:16px;}
-.setup-label{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px;}
-.setup-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);padding:12px 14px;color:var(--text);font-size:13px;outline:none;-webkit-appearance:none;font-family:monospace;}
-.setup-input:focus{border-color:var(--accent);}
-.setup-hint{font-size:11px;color:var(--text3);margin-top:5px;line-height:1.5;}
-.setup-note{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm);padding:14px;margin-bottom:20px;font-size:12px;color:var(--text2);line-height:1.7;}
-.setup-note code{color:var(--accent);font-size:11px;background:var(--surface3);padding:1px 5px;border-radius:3px;}
-.btn-full{width:100%;background:var(--accent);color:#000;border:none;border-radius:var(--rsm);padding:15px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;}
-.btn-full-outline{width:100%;background:none;border:1px solid var(--border2);color:var(--text);border-radius:var(--rsm);padding:14px;font-size:14px;font-weight:600;cursor:pointer;}
 
 .spin{width:28px;height:28px;border:3px solid var(--surface3);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto;}
 @keyframes spin{to{transform:rotate(360deg);}}
@@ -290,7 +278,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
     <div class="home-hero">
       <div class="logo">GYMDASH</div>
       <div class="home-title">Track. Save.<br>Get Stronger.</div>
-      <div class="home-sub">Every set. Every session. All logged.</div>
+      <div class="home-sub">Every set. Every session. Always saved. 🟢</div>
     </div>
 
     <div class="url-section">
@@ -307,7 +295,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
       <button class="tab-btn active" onclick="switchTab('workouts')">Workouts</button>
       <button class="tab-btn" onclick="switchTab('history')">History</button>
       <button class="tab-btn" onclick="switchTab('progress')">Progress</button>
-      <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
+
     </div>
 
     <!-- WORKOUTS TAB -->
@@ -337,42 +325,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
       </div>
     </div>
 
-    <!-- SETTINGS TAB -->
-    <div id="tab-settings" style="display:none;">
-      <div class="setup-wrap">
-        <div class="setup-title">Supabase Setup</div>
-        <div class="setup-sub">Connect your existing Supabase project to save sessions and track progress over time.</div>
-
-        <div class="setup-note">
-          Run this SQL in your Supabase dashboard (<code>SQL Editor</code>) to create the sessions table:<br><br>
-          <code>create table if not exists workout_sessions (</code><br>
-          <code>&nbsp;&nbsp;id uuid default gen_random_uuid() primary key,</code><br>
-          <code>&nbsp;&nbsp;created_at timestamptz default now(),</code><br>
-          <code>&nbsp;&nbsp;workout_id text,</code><br>
-          <code>&nbsp;&nbsp;workout_name text,</code><br>
-          <code>&nbsp;&nbsp;week_label text,</code><br>
-          <code>&nbsp;&nbsp;tag text,</code><br>
-          <code>&nbsp;&nbsp;sets_completed int,</code><br>
-          <code>&nbsp;&nbsp;total_volume_lbs numeric,</code><br>
-          <code>&nbsp;&nbsp;duration_minutes int,</code><br>
-          <code>&nbsp;&nbsp;set_log jsonb</code><br>
-          <code>);</code>
-        </div>
-
-        <div class="setup-field">
-          <div class="setup-label">Supabase Project URL</div>
-          <input class="setup-input" id="cfg-url" type="url" placeholder="https://xxxxxxxxxxx.supabase.co" autocomplete="off" spellcheck="false">
-          <div class="setup-hint">Found in: Project Settings → API → Project URL</div>
-        </div>
-        <div class="setup-field">
-          <div class="setup-label">Anon / Public Key</div>
-          <input class="setup-input" id="cfg-key" type="text" placeholder="eyJhbGci..." autocomplete="off" spellcheck="false">
-          <div class="setup-hint">Found in: Project Settings → API → Project API Keys → anon public</div>
-        </div>
-        <button class="btn-full" onclick="saveConfig()">Save & Test Connection</button>
-        <button class="btn-full-outline" onclick="clearConfig()">Clear Saved Credentials</button>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -480,34 +432,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 
 <script>
 // ═══════════════════════════════════════════════
-// CONFIG — stored in localStorage
+// CONFIG — hardcoded, always connected
 // ═══════════════════════════════════════════════
-let CFG = { url: '', key: '' };
-function loadConfig() {
-  try { CFG = JSON.parse(localStorage.getItem('gymdash_cfg') || '{}'); } catch(e){}
-  if (CFG.url) document.getElementById('cfg-url').value = CFG.url;
-  if (CFG.key) document.getElementById('cfg-key').value = CFG.key;
-}
-function saveConfig() {
-  CFG.url = document.getElementById('cfg-url').value.trim().replace(/\/$/, '');
-  CFG.key = document.getElementById('cfg-key').value.trim();
-  if (!CFG.url || !CFG.key) { showToast('Fill in both fields', true); return; }
-  localStorage.setItem('gymdash_cfg', JSON.stringify(CFG));
-  testConnection();
-}
-function clearConfig() {
-  CFG = {}; localStorage.removeItem('gymdash_cfg');
-  document.getElementById('cfg-url').value = '';
-  document.getElementById('cfg-key').value = '';
-  showToast('Credentials cleared');
-}
-async function testConnection() {
-  try {
-    const r = await sbFetch('workout_sessions?limit=1');
-    if (r.ok) showToast('Connected to Supabase ✓', false);
-    else showToast('Connection failed — check your URL and key', true);
-  } catch(e) { showToast('Connection failed: ' + e.message, true); }
-}
+const CFG = {
+  url: 'https://vaktkyrtfxlqfzdqfeiq.supabase.co',
+  key: 'sb_publishable_PzQNU1g9t7nH_c8GrK37sQ_2OocnlNQ'
+};
+function loadConfig() {} // no-op, kept for call compatibility
 
 // ═══════════════════════════════════════════════
 // SUPABASE HELPERS
@@ -701,13 +632,12 @@ let currentTab = 'workouts';
 function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab-btn').forEach((b,i) => {
-    const tabs = ['workouts','history','progress','settings'];
+    const tabs = ['workouts','history','progress'];
     b.classList.toggle('active', tabs[i] === tab);
   });
   document.getElementById('tab-workouts').style.display = tab === 'workouts' ? '' : 'none';
   document.getElementById('tab-history').style.display  = tab === 'history'  ? '' : 'none';
   document.getElementById('tab-progress').style.display = tab === 'progress' ? '' : 'none';
-  document.getElementById('tab-settings').style.display = tab === 'settings' ? '' : 'none';
   if (tab === 'history')  loadHistory();
   if (tab === 'progress') loadProgress();
 }
@@ -1014,11 +944,6 @@ async function showComplete() {
   const statusEl = document.getElementById('save-status');
   showScreen('s-complete');
 
-  if (!CFG.url || !CFG.key) {
-    statusEl.textContent = '⚠️ Set up Supabase in Settings to save this session.';
-    statusEl.style.color = 'var(--text3)';
-    return;
-  }
   statusEl.textContent = '💾 Saving session…';
   statusEl.style.color = 'var(--text2)';
   try {
@@ -1123,10 +1048,6 @@ function restartWorkout() { startWorkout(currentWorkout.id); }
 // ═══════════════════════════════════════════════
 async function loadHistory() {
   const el = document.getElementById('hist-list');
-  if (!CFG.url || !CFG.key) {
-    el.innerHTML = '<div class="hist-empty">Connect Supabase in Settings to see your session history.</div>';
-    return;
-  }
   el.innerHTML = '<div class="loading-wrap"><div class="spin"></div>Loading history…</div>';
   try {
     const rows = await sbSelect('workout_sessions', 'order=created_at.desc&limit=30');
@@ -1219,10 +1140,6 @@ function showDetail(row) {
 // ═══════════════════════════════════════════════
 async function loadProgress() {
   const el = document.getElementById('prog-content');
-  if (!CFG.url || !CFG.key) {
-    el.innerHTML = '<div class="hist-empty">Connect Supabase in Settings to track progress.</div>';
-    return;
-  }
   el.innerHTML = '<div class="loading-wrap"><div class="spin"></div>Loading progress…</div>';
   try {
     const rows = await sbSelect('workout_sessions', 'order=created_at.asc&limit=50');
@@ -1305,7 +1222,7 @@ function showScreen(id, back=false) {
     document.getElementById(id).classList.remove('hidden');
   }
 }
-function goHome() { clearRest(); showScreen('s-home', true); if(currentTab==='history') loadHistory(); if(currentTab==='progress') loadProgress(); }
+function goHome() { clearRest(); showScreen('s-home', true); if(currentTab==='history') loadHistory(); if(currentTab==='progress') loadProgress(); switchTab('workouts'); }
 
 // ═══════════════════════════════════════════════
 // TOAST
