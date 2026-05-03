@@ -708,18 +708,27 @@ const GITHUB_API_TREE = 'https://api.github.com/repos/AZDVHS/EstherGymApp/conten
 async function loadTrainerWorkouts() {
   const el = document.getElementById('trainer-cards');
   try {
-    // Use GitHub API to list all files in /workouts/ — no index.json needed
-    const apiRes = await fetch(GITHUB_API_TREE + '?t=' + Date.now());
-    if (!apiRes.ok) throw new Error('Could not read workouts folder');
+    // Use GitHub API to list all files in /workouts/
+    const apiRes = await fetch(GITHUB_API_TREE, {
+      headers: { 'Accept': 'application/vnd.github.v3+json' },
+      cache: 'no-store'
+    });
+    if (!apiRes.ok) {
+      const err = await apiRes.json().catch(() => ({}));
+      throw new Error(err.message || `GitHub API ${apiRes.status}`);
+    }
     const files = await apiRes.json();
 
     // Filter to only .json files
-    const jsonFiles = files.filter(f => f.name.endsWith('.json') && f.type === 'file');
-    if (!jsonFiles.length) throw new Error('No workouts found');
+    const jsonFiles = Array.isArray(files) ? files.filter(f => f.name.endsWith('.json') && f.type === 'file') : [];
+    if (!jsonFiles.length) throw new Error('No workout files found');
 
-    // Fetch each workout file in parallel using the raw download URL
+    // Fetch each workout file in parallel using raw URL
     const results = await Promise.allSettled(
-      jsonFiles.map(f => fetch(f.download_url + '?t=' + Date.now()).then(r => r.json()))
+      jsonFiles.map(f => fetch(f.download_url, { cache: 'no-store' }).then(r => {
+        if (!r.ok) throw new Error(f.name);
+        return r.json();
+      }))
     );
 
     TRAINER = results
@@ -729,7 +738,11 @@ async function loadTrainerWorkouts() {
     renderTrainerCards();
     renderArchivedCards();
   } catch(e) {
-    el.innerHTML = `<div class="trainer-loading">Drop .json files into /workouts/ on GitHub — they'll appear here automatically.</div>`;
+    console.error('loadTrainerWorkouts:', e);
+    el.innerHTML = `<div class="trainer-loading" style="color:var(--orange);">
+      Trainer workouts: ${e.message}<br>
+      <span style="font-size:11px;color:var(--text3);">Check that /workouts/ folder exists on GitHub</span>
+    </div>`;
   }
 }
 
@@ -856,9 +869,10 @@ function renderHome() {
 function renderCustomCards() {
   const el  = document.getElementById('custom-cards');
   const lbl = document.getElementById('custom-label');
+  if (!el) return; // element removed from HTML — skip
   const visible = CUSTOM.filter(w => !isArchived(w.id) && !isRemoved(w.id));
   el.innerHTML = visible.map(w => wCard(w, {isCustom:true})).join('');
-  lbl.style.display = (CUSTOM.length > 0) ? '' : 'none';
+  if (lbl) lbl.style.display = (CUSTOM.length > 0) ? '' : 'none';
 }
 function renderArchivedCards() {
   const builtinArchived = [...BUILTIN, ...OTHER, ...CUSTOM].filter(w => isArchived(w.id));
