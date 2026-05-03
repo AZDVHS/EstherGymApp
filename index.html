@@ -344,7 +344,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
   </div>
   <div class="body" id="w-body" style="padding-bottom:80px;"></div>
   <div class="finish-bar">
-    <button class="btn-abandon" onclick="goHome()">✕ Exit</button>
+    <button class="btn-abandon" onclick="abandonWorkout()">✕ Exit</button>
     <button class="btn-finish" onclick="openConfirm()">Finish &amp; Save Workout →</button>
   </div>
 </div>
@@ -444,21 +444,24 @@ function loadConfig() {} // no-op, kept for call compatibility
 // SUPABASE HELPERS
 // ═══════════════════════════════════════════════
 async function sbFetch(path, options = {}) {
-  return fetch(`${CFG.url}/rest/v1/${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': CFG.key,
-      'Authorization': `Bearer ${CFG.key}`,
-      'Prefer': options.method === 'POST' ? 'return=representation' : undefined,
-      ...options.headers
-    }
-  });
+  // Support both JWT (eyJ...) and publishable (sb_publishable_...) key formats
+  const isJWT = CFG.key.startsWith('eyJ');
+  const headers = {
+    'Content-Type': 'application/json',
+    'apikey': CFG.key,
+    ...(isJWT ? { 'Authorization': `Bearer ${CFG.key}` } : {}),
+    ...(options.method === 'POST' ? { 'Prefer': 'return=minimal' } : {}),
+    ...(options.headers || {})
+  };
+  return fetch(`${CFG.url}/rest/v1/${path}`, { ...options, headers });
 }
 async function sbInsert(table, data) {
   const r = await sbFetch(table, { method: 'POST', body: JSON.stringify(data) });
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
+  if (!r.ok) {
+    const errText = await r.text();
+    throw new Error(`${r.status}: ${errText}`);
+  }
+  return true; // return=minimal sends 201 with no body
 }
 async function sbSelect(table, params = '') {
   const r = await sbFetch(`${table}?${params}`);
@@ -624,6 +627,56 @@ let sessionStart = null;
 let restTimer = null;
 let restTotal = 0;
 let restRemain = 0;
+
+// ── IN-PROGRESS PERSISTENCE ──────────────────
+const SESSION_KEY = 'gymdash_session';
+
+function persistSession() {
+  if (!currentWorkout) return;
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({
+      workoutId: currentWorkout.id,
+      setData,
+      selectedFin,
+      sessionStart,
+      savedAt: Date.now()
+    }));
+  } catch(e) { console.warn('persist failed', e); }
+}
+
+function clearPersistedSession() {
+  localStorage.removeItem(SESSION_KEY);
+}
+
+function restoreSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return false;
+    const saved = JSON.parse(raw);
+    // Ignore sessions older than 6 hours
+    if (Date.now() - saved.savedAt > 6 * 60 * 60 * 1000) {
+      clearPersistedSession();
+      return false;
+    }
+    const all = [...BUILTIN, ...OTHER, ...CUSTOM];
+    const workout = all.find(w => w.id === saved.workoutId);
+    if (!workout) return false;
+    // Restore state
+    currentWorkout = workout;
+    setData = saved.setData || {};
+    selectedFin = saved.selectedFin || {};
+    sessionStart = saved.sessionStart || Date.now();
+    return true;
+  } catch(e) { return false; }
+}
+
+// Save whenever app goes to background or tab switches away
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && currentWorkout) persistSession();
+});
+window.addEventListener('pagehide', () => {
+  if (currentWorkout) persistSession();
+});
 
 // ═══════════════════════════════════════════════
 // TABS
@@ -813,6 +866,7 @@ function toggleSet(pi,ei,si,restSecs) {
   }
   syncExCard(pi, ei);
   updateProgress();
+  persistSession();
 }
 
 function toggleExAll(pi,ei) {
@@ -914,6 +968,7 @@ function closeConfirm(e) {
 
 async function confirmFinish() {
   document.getElementById('confirm-overlay').classList.add('hidden');
+  clearPersistedSession();
   await showComplete();
 }
 
@@ -1222,7 +1277,20 @@ function showScreen(id, back=false) {
     document.getElementById(id).classList.remove('hidden');
   }
 }
-function goHome() { clearRest(); showScreen('s-home', true); if(currentTab==='history') loadHistory(); if(currentTab==='progress') loadProgress(); switchTab('workouts'); }
+function goHome() {
+  clearRest();
+  currentWorkout = null;
+  showScreen('s-home', true);
+  switchTab('workouts');
+}
+function abandonWorkout() {
+  if (!confirm('Exit without saving?')) return;
+  clearPersistedSession();
+  currentWorkout = null;
+  clearRest();
+  showScreen('s-home', true);
+  switchTab('workouts');
+}
 
 // ═══════════════════════════════════════════════
 // TOAST
@@ -1239,6 +1307,56 @@ function showToast(msg, err=false) {
 // ═══════════════════════════════════════════════
 loadConfig();
 renderHome();
+checkForResume();
+
+function checkForResume() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (Date.now() - saved.savedAt > 6 * 60 * 60 * 1000) { clearPersistedSession(); return; }
+    const all = [...BUILTIN, ...OTHER, ...CUSTOM];
+    const workout = all.find(w => w.id === saved.workoutId);
+    if (!workout) return;
+    // Show resume banner
+    const done = Object.values(saved.setData||{}).flat().filter(s=>s.done).length;
+    const total = Object.values(saved.setData||{}).flat().length;
+    showResumeBanner(workout, done, total, saved);
+  } catch(e) {}
+}
+
+function showResumeBanner(workout, done, total, saved) {
+  const banner = document.createElement('div');
+  banner.id = 'resume-banner';
+  banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border2);padding:14px 16px calc(var(--safe-bot) + 14px);z-index:50;display:flex;align-items:center;gap:12px;';
+  const elapsed = Math.round((Date.now() - saved.sessionStart) / 60000);
+  banner.innerHTML = `
+    <div style="flex:1;">
+      <div style="font-size:14px;font-weight:800;">${workout.name} — ${workout.week}</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:2px;">${done}/${total} sets done · ${elapsed} min ago</div>
+    </div>
+    <button onclick="dismissResume()" style="background:none;border:1px solid var(--border2);color:var(--text3);border-radius:20px;padding:8px 14px;font-size:12px;cursor:pointer;">Discard</button>
+    <button onclick="resumeSession('${workout.id}')" style="background:var(--accent);color:#000;border:none;border-radius:20px;padding:9px 16px;font-size:13px;font-weight:800;cursor:pointer;">Resume →</button>
+  `;
+  document.body.appendChild(banner);
+}
+
+function resumeSession(id) {
+  dismissResume();
+  if (restoreSession()) {
+    document.getElementById('w-hdr-title').textContent = currentWorkout.name;
+    document.getElementById('w-hdr-sub').textContent = `${currentWorkout.week} · ${currentWorkout.model || currentWorkout.focus}`;
+    document.getElementById('w-hdr-badge').textContent = currentWorkout.duration;
+    renderWorkout();
+    showScreen('s-workout');
+  }
+}
+
+function dismissResume() {
+  clearPersistedSession();
+  const b = document.getElementById('resume-banner');
+  if (b) b.remove();
+}
 </script>
 </body>
 </html>
