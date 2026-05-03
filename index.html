@@ -359,7 +359,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
         <!-- TRAINER WORKOUTS — loaded from Supabase -->
         <div class="trainer-hdr">
           <div class="trainer-hdr-label">Trainer Workouts</div>
-          <button class="btn-add" onclick="showAddWorkout()">+ Add</button>
         </div>
         <div id="trainer-cards"><div class="trainer-loading">Loading trainer workouts…</div></div>
 
@@ -475,60 +474,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
   <div class="body" id="det-body"></div>
 </div>
 
-<!-- ══ ADD WORKOUT ══ -->
-<div class="screen hidden" id="s-add">
-  <div class="hdr">
-    <button class="hdr-back" onclick="hideAddWorkout()">‹</button>
-    <div style="flex:1"><div class="hdr-title" id="add-screen-title">Add Trainer Workout</div></div>
-    <button class="hdr-btn" id="add-save-btn" onclick="saveTrainerWorkout()">Save</button>
-  </div>
-  <div class="body">
-    <div class="add-workout-wrap">
-      <input type="hidden" id="edit-workout-id">
-
-      <div class="form-field">
-        <label class="form-label">Workout Name</label>
-        <input class="form-input" id="aw-name" placeholder="e.g. Candice (VASA)" type="text">
-      </div>
-      <div class="form-field">
-        <label class="form-label">Week / Date Label</label>
-        <input class="form-input" id="aw-week" placeholder="e.g. 05/09" type="text">
-      </div>
-      <div class="form-field">
-        <label class="form-label">Focus</label>
-        <input class="form-input" id="aw-focus" placeholder="e.g. Glutes · Legs" type="text">
-      </div>
-      <div class="form-field">
-        <label class="form-label">Card Color</label>
-        <div class="color-picker">
-          <div class="color-opt selected" data-class="total" style="background:#4fff8f20;border-color:#4fff8f;" onclick="selectColor(this)">🟢</div>
-          <div class="color-opt" data-class="week1" style="background:#e8ff4720;border-color:transparent;" onclick="selectColor(this)">🟡</div>
-          <div class="color-opt" data-class="week2" style="background:#4fa3ff20;border-color:transparent;" onclick="selectColor(this)">🔵</div>
-          <div class="color-opt" data-class="week3" style="background:#ff4f4f20;border-color:transparent;" onclick="selectColor(this)">🔴</div>
-          <div class="color-opt" data-class="upper" style="background:#ff9f4f20;border-color:transparent;" onclick="selectColor(this)">🟠</div>
-          <div class="color-opt" data-class="custom" style="background:#b47fff20;border-color:transparent;" onclick="selectColor(this)">🟣</div>
-        </div>
-      </div>
-
-      <div class="form-section-title">Exercises</div>
-      <div class="form-hint" style="margin-bottom:12px;">
-        Paste the workout below — one exercise per line. Use any of these formats:<br><br>
-        <code style="color:var(--accent);font-size:11px;">Hip Thrust 3x12 60s</code><br>
-        <code style="color:var(--accent);font-size:11px;">Cable Kickback · 3 sets · 15/leg · 45s rest</code><br>
-        <code style="color:var(--accent);font-size:11px;">Leg Press: sets 4, reps 10-12, rest 90</code><br><br>
-        Sets, reps and rest will be parsed automatically.
-      </div>
-      <div class="form-field">
-        <label class="form-label">Exercise List</label>
-        <textarea class="form-textarea" id="aw-exercises" placeholder="Cable Leg Raise 3x12-15 45s&#10;Cable Kickback 3x15 each leg 45s&#10;Barbell Back Squat 3x12-15 45s&#10;Booty Builder 3x12-15 45s"></textarea>
-      </div>
-      <div class="form-field">
-        <label class="form-label">Phase Goal / Notes (optional)</label>
-        <input class="form-input" id="aw-goal" placeholder="e.g. Focus on full range of motion" type="text">
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- ══ REST TIMER ══ -->
 <div class="rest-overlay hidden" id="rest-overlay">
@@ -752,36 +697,29 @@ const OTHER = [
 ];
 
 // ═══════════════════════════════════════════════
-// TRAINER WORKOUTS — loaded live from Supabase
+// TRAINER WORKOUTS — fetched from GitHub /workouts/
+// Add a file to index.json to register a new workout
 // ═══════════════════════════════════════════════
 let TRAINER = []; // populated by loadTrainerWorkouts()
 
+const GITHUB_BASE  = 'https://raw.githubusercontent.com/AZDVHS/EstherGymApp/main/workouts/';
+const GITHUB_INDEX = GITHUB_BASE + 'index.json';
+
 async function loadTrainerWorkouts() {
+  const el = document.getElementById('trainer-cards');
   try {
-    const rows = await sbSelect('workouts', 'order=created_at.desc');
-    TRAINER = rows.map(dbRowToWorkout);
+    const idxRes = await fetch(GITHUB_INDEX + '?t=' + Date.now());
+    if (!idxRes.ok) throw new Error('index.json not found');
+    const filenames = await idxRes.json();
+    const results = await Promise.allSettled(
+      filenames.map(f => fetch(GITHUB_BASE + f + '?t=' + Date.now()).then(r => { if(!r.ok) throw new Error(f); return r.json(); }))
+    );
+    TRAINER = results.filter(r => r.status === 'fulfilled').map(r => ({...r.value, _fromGH: true}));
     renderTrainerCards();
     renderArchivedCards();
   } catch(e) {
-    document.getElementById('trainer-cards').innerHTML =
-      `<div class="trainer-loading" style="color:var(--red)">Could not load trainer workouts: ${e.message}</div>`;
+    el.innerHTML = `<div class="trainer-loading">No trainer workouts yet — add an index.json to /workouts/ on GitHub.</div>`;
   }
-}
-
-function dbRowToWorkout(r) {
-  return {
-    id: r.id,
-    name: r.name,
-    week: r.week_label,
-    weekClass: r.week_class || 'total',
-    tag: r.tag || 'Trainer',
-    duration: r.duration || '60 MIN',
-    focus: r.focus || '',
-    model: r.model || 'Trainer Session',
-    phases: r.phases,
-    archived: r.archived || false,
-    _fromDB: true
-  };
 }
 
 function renderTrainerCards() {
@@ -931,9 +869,6 @@ function wCard(w, opts={}) {
       ${isArchivedCard
         ? `<button class="wcard-action-btn archive-btn" onclick="unarchiveWorkout('${w.id}')">↑ Restore</button>`
         : `<button class="wcard-action-btn archive-btn" onclick="archiveWorkout('${w.id}')">Archive</button>`}
-      ${w._fromDB && !isArchivedCard
-        ? `<button class="wcard-action-btn" onclick="showAddWorkout('${w.id}')">Edit</button>`
-        : ''}
       ${isCustom || isArchivedCard
         ? `<button class="wcard-action-btn danger" onclick="removeWorkout('${w.id}')">Delete</button>`
         : ''}
@@ -970,61 +905,34 @@ function toggleArchived() {
   document.getElementById('archive-arrow').classList.toggle('open', showArchived);
 }
 
-async function archiveWorkout(id) {
-  const w = TRAINER.find(x => x.id === id);
-  if (w && w._fromDB) {
-    try {
-      await sbFetch(`workouts?id=eq.${id}`, {method:'PATCH', body: JSON.stringify({archived:true})});
-      w.archived = true;
-      renderTrainerCards();
-      renderArchivedCards();
-      showToast('Workout archived', false);
-    } catch(e) { showToast('Failed: ' + e.message, true); }
-  } else {
-    if (!ARCHIVED.includes(id)) ARCHIVED.push(id);
-    saveManageState();
-    renderHome();
-    showToast('Workout archived', false);
-  }
+function archiveWorkout(id) {
+  if (!ARCHIVED.includes(id)) ARCHIVED.push(id);
+  saveManageState();
+  renderTrainerCards();
+  renderArchivedCards();
+  renderHome();
+  showToast('Workout archived', false);
 }
 
-async function unarchiveWorkout(id) {
-  const w = TRAINER.find(x => x.id === id);
-  if (w && w._fromDB) {
-    try {
-      await sbFetch(`workouts?id=eq.${id}`, {method:'PATCH', body: JSON.stringify({archived:false})});
-      w.archived = false;
-      renderTrainerCards();
-      renderArchivedCards();
-      showToast('Workout restored', false);
-    } catch(e) { showToast('Failed: ' + e.message, true); }
-  } else {
-    ARCHIVED = ARCHIVED.filter(x => x !== id);
-    saveManageState();
-    renderHome();
-    showToast('Workout restored', false);
-  }
+function unarchiveWorkout(id) {
+  ARCHIVED = ARCHIVED.filter(x => x !== id);
+  saveManageState();
+  renderTrainerCards();
+  renderArchivedCards();
+  renderHome();
+  showToast('Workout restored', false);
 }
 
-async function removeWorkout(id) {
-  if (!confirm('Delete this workout permanently?')) return;
-  const w = TRAINER.find(x => x.id === id);
-  if (w && w._fromDB) {
-    try {
-      await sbFetch(`workouts?id=eq.${id}`, {method:'DELETE'});
-      TRAINER = TRAINER.filter(x => x.id !== id);
-      renderTrainerCards();
-      renderArchivedCards();
-      showToast('Workout deleted', false);
-    } catch(e) { showToast('Failed: ' + e.message, true); }
-  } else {
-    REMOVED.push(id);
-    ARCHIVED = ARCHIVED.filter(x => x !== id);
-    CUSTOM = CUSTOM.filter(w => w.id !== id);
-    saveManageState();
-    renderHome();
-    showToast('Workout removed', false);
-  }
+function removeWorkout(id) {
+  if (!confirm('Remove this workout from the list? It stays on GitHub and can be re-added to index.json anytime.')) return;
+  REMOVED.push(id);
+  ARCHIVED = ARCHIVED.filter(x => x !== id);
+  CUSTOM = CUSTOM.filter(w => w.id !== id);
+  saveManageState();
+  renderTrainerCards();
+  renderArchivedCards();
+  renderHome();
+  showToast('Workout removed', false);
 }
 
 // ═══════════════════════════════════════════════
@@ -1657,150 +1565,6 @@ function showToast(msg, err=false) {
   t.textContent = msg;
   t.className = 'toast' + (err?' err':'') + ' show';
   setTimeout(() => t.classList.remove('show'), 2800);
-}
-
-// ═══════════════════════════════════════════════
-// ADD / EDIT TRAINER WORKOUT
-// ═══════════════════════════════════════════════
-let selectedWeekClass = 'total';
-let editingWorkoutId = null;
-
-function showAddWorkout(workoutId=null) {
-  editingWorkoutId = workoutId;
-  document.getElementById('add-screen-title').textContent = workoutId ? 'Edit Workout' : 'Add Trainer Workout';
-  document.getElementById('add-save-btn').textContent = workoutId ? 'Update' : 'Save';
-  // Clear form
-  document.getElementById('aw-name').value = '';
-  document.getElementById('aw-week').value = '';
-  document.getElementById('aw-focus').value = '';
-  document.getElementById('aw-goal').value = '';
-  document.getElementById('aw-exercises').value = '';
-  document.getElementById('edit-workout-id').value = '';
-  selectedWeekClass = 'total';
-  document.querySelectorAll('.color-opt').forEach(o => {
-    o.style.borderColor = o.dataset.class === 'total' ? 'var(--text)' : 'transparent';
-  });
-  // If editing, populate form
-  if (workoutId) {
-    const w = TRAINER.find(x => x.id === workoutId);
-    if (w) {
-      document.getElementById('aw-name').value = w.name;
-      document.getElementById('aw-week').value = w.week;
-      document.getElementById('aw-focus').value = w.focus || '';
-      document.getElementById('edit-workout-id').value = w.id;
-      selectedWeekClass = w.weekClass || 'total';
-      document.querySelectorAll('.color-opt').forEach(o => {
-        o.style.borderColor = o.dataset.class === selectedWeekClass ? 'var(--text)' : 'transparent';
-      });
-      // Reconstruct exercise text from phases
-      const exLines = [];
-      w.phases.forEach(p => {
-        if (p.goal && !editingWorkoutId) document.getElementById('aw-goal').value = p.goal;
-        if (p.goal) document.getElementById('aw-goal').value = p.goal;
-        if (p.exercises) p.exercises.forEach(e => {
-          exLines.push(`${e.name} ${e.sets}x${e.reps} ${e.rest}s`);
-        });
-      });
-      document.getElementById('aw-exercises').value = exLines.join('
-');
-    }
-  }
-  showScreen('s-add');
-}
-
-function hideAddWorkout() { showScreen('s-home'); }
-
-function selectColor(el) {
-  document.querySelectorAll('.color-opt').forEach(o => o.style.borderColor = 'transparent');
-  el.style.borderColor = 'var(--text)';
-  selectedWeekClass = el.dataset.class;
-}
-
-function parseExercises(text) {
-  const lines = text.trim().split('
-').filter(l => l.trim());
-  return lines.map(line => {
-    // Parse: "Exercise Name SxR Ts" or "Exercise Name · S sets · R reps · Ts rest"
-    let name = line, sets = 3, reps = '12', rest = 60;
-    // Match patterns like "3x12", "3x12-15", "3x15/leg"
-    const setsReps = line.match(/(\d+)\s*[x×]\s*([\d\-\/a-z ]+)/i);
-    if (setsReps) {
-      sets = parseInt(setsReps[1]);
-      reps = setsReps[2].trim();
-      name = line.substring(0, line.indexOf(setsReps[0])).trim();
-    }
-    // Match rest: "45s", "60 sec", "90s rest"
-    const restMatch = line.match(/(\d+)\s*s(?:ec)?/i);
-    if (restMatch) rest = parseInt(restMatch[1]);
-    // Clean up name punctuation
-    name = name.replace(/[·:,\-]+$/, '').trim();
-    if (!name) name = line.trim();
-    return { name, sets, reps: reps.replace(/\s+/g,' '), rest };
-  });
-}
-
-async function saveTrainerWorkout() {
-  const name  = document.getElementById('aw-name').value.trim();
-  const week  = document.getElementById('aw-week').value.trim();
-  const focus = document.getElementById('aw-focus').value.trim();
-  const goal  = document.getElementById('aw-goal').value.trim();
-  const exText= document.getElementById('aw-exercises').value.trim();
-  const editId= document.getElementById('edit-workout-id').value.trim();
-
-  if (!name) { showToast('Enter a workout name', true); return; }
-  if (!exText) { showToast('Add at least one exercise', true); return; }
-
-  const exercises = parseExercises(exText);
-  const phases = [
-    {
-      name: 'Workout',
-      goal: goal || 'Trainer-assigned session. Focus on controlled movement and full range of motion.',
-      exercises
-    },
-    {
-      name: 'Recovery',
-      cooldown: true,
-      cards: [
-        { title: 'Static Stretching — 5 min', desc: 'Hold each stretch 30–45 seconds.' },
-        { title: 'Protein Window', desc: 'Hit your protein goal within 30–60 min post-session.' }
-      ]
-    }
-  ];
-
-  const id = editId || `trainer-${Date.now()}`;
-  const payload = {
-    id,
-    name,
-    week_label: week || new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit'}),
-    week_class: selectedWeekClass,
-    tag: 'Trainer',
-    duration: '60 MIN',
-    focus: focus || 'Trainer Session',
-    model: `Trainer Session`,
-    phases,
-    archived: false
-  };
-
-  const btn = document.getElementById('add-save-btn');
-  btn.textContent = 'Saving…';
-
-  try {
-    if (editId) {
-      await sbFetch(`workouts?id=eq.${editId}`, {method:'PATCH', body: JSON.stringify(payload)});
-      const idx = TRAINER.findIndex(w => w.id === editId);
-      if (idx !== -1) TRAINER[idx] = dbRowToWorkout({...payload, phases});
-    } else {
-      await sbInsert('workouts', payload);
-      TRAINER.unshift(dbRowToWorkout(payload));
-    }
-    renderTrainerCards();
-    renderArchivedCards();
-    hideAddWorkout();
-    showToast(editId ? 'Workout updated ✓' : 'Workout saved ✓', false);
-  } catch(e) {
-    btn.textContent = editId ? 'Update' : 'Save';
-    showToast('Save failed: ' + e.message, true);
-  }
 }
 
 // ═══════════════════════════════════════════════
