@@ -68,6 +68,40 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .cards{padding:0 20px;display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
 .wcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;cursor:pointer;position:relative;overflow:hidden;transition:border-color .2s;}
 .wcard:active{background:var(--surface2);}
+.wcard-actions{display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);}
+.wcard-action-btn{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:var(--rsm);padding:8px;font-size:12px;font-weight:700;cursor:pointer;text-align:center;}
+.wcard-action-btn:active{opacity:.7;}
+.wcard-action-btn.danger{color:var(--red);}
+.wcard-action-btn.archive-btn{color:var(--orange);}
+.manage-bar{display:flex;justify-content:space-between;align-items:center;padding:12px 20px 4px;}
+.manage-bar-label{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.8px;text-transform:uppercase;}
+.btn-manage{background:none;border:1px solid var(--border2);color:var(--text2);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;}
+.btn-manage.active{background:var(--accent-dim);color:var(--accent);border-color:var(--accent);}
+
+/* ADD WORKOUT FORM */
+.add-workout-wrap{padding:20px;}
+.form-field{margin-bottom:14px;}
+.form-label{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px;display:block;}
+.form-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);padding:12px 14px;color:var(--text);font-size:14px;outline:none;-webkit-appearance:none;}
+.form-input:focus{border-color:var(--accent);}
+.form-textarea{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);padding:12px 14px;color:var(--text);font-size:13px;outline:none;-webkit-appearance:none;resize:none;min-height:180px;line-height:1.6;font-family:monospace;}
+.form-textarea:focus{border-color:var(--accent);}
+.form-hint{font-size:11px;color:var(--text3);margin-top:5px;line-height:1.5;}
+.form-section-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.color-picker{display:flex;gap:8px;flex-wrap:wrap;}
+.color-opt{width:36px;height:36px;border-radius:50%;border:2px solid transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.color-opt.selected{border-color:var(--text);}
+
+/* TRAINER SECTION */
+.trainer-hdr{display:flex;justify-content:space-between;align-items:center;padding:12px 20px 4px;}
+.trainer-hdr-label{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.8px;text-transform:uppercase;}
+.btn-add{background:var(--accent);color:#000;border:none;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;}
+.trainer-loading{padding:20px;text-align:center;color:var(--text3);font-size:13px;}
+.archived-toggle{display:flex;align-items:center;gap:8px;padding:12px 20px 4px;cursor:pointer;}
+.archived-toggle-label{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;}
+.archived-toggle-arrow{font-size:12px;color:var(--text3);transition:transform .2s;}
+.archived-toggle-arrow.open{transform:rotate(90deg);}
+.wcard.archived-card{opacity:.6;border-style:dashed;}
 .wcard::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;}
 .wcard.week1::before{background:var(--accent);}
 .wcard.week2::before{background:var(--blue);}
@@ -313,13 +347,29 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 
     <!-- WORKOUTS TAB -->
     <div id="tab-workouts">
-      <div style="padding:16px 0 0;">
-        <div class="sec-label">3-Month Build — Lower Body</div>
+      <div style="padding:12px 0 0;">
+        <div class="manage-bar">
+          <div class="manage-bar-label">3-Month Build — Lower Body</div>
+          <button class="btn-manage" id="manage-btn" onclick="toggleManage()">Manage</button>
+        </div>
         <div class="cards" id="builtin-cards"></div>
         <div class="sec-label">Other Workouts</div>
         <div class="cards" id="other-cards"></div>
-        <div class="sec-label" id="custom-label" style="display:none">Loaded from GitHub</div>
-        <div class="cards" id="custom-cards"></div>
+
+        <!-- TRAINER WORKOUTS — loaded from Supabase -->
+        <div class="trainer-hdr">
+          <div class="trainer-hdr-label">Trainer Workouts</div>
+          <button class="btn-add" onclick="showAddWorkout()">+ Add</button>
+        </div>
+        <div id="trainer-cards"><div class="trainer-loading">Loading trainer workouts…</div></div>
+
+        <div id="archive-section" style="display:none;">
+          <div class="archived-toggle" onclick="toggleArchived()">
+            <span class="archived-toggle-label">Archived Workouts</span>
+            <span class="archived-toggle-arrow" id="archive-arrow">›</span>
+          </div>
+          <div class="cards" id="archived-cards" style="display:none;"></div>
+        </div>
       </div>
     </div>
 
@@ -423,6 +473,61 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
     </div>
   </div>
   <div class="body" id="det-body"></div>
+</div>
+
+<!-- ══ ADD WORKOUT ══ -->
+<div class="screen hidden" id="s-add">
+  <div class="hdr">
+    <button class="hdr-back" onclick="hideAddWorkout()">‹</button>
+    <div style="flex:1"><div class="hdr-title" id="add-screen-title">Add Trainer Workout</div></div>
+    <button class="hdr-btn" id="add-save-btn" onclick="saveTrainerWorkout()">Save</button>
+  </div>
+  <div class="body">
+    <div class="add-workout-wrap">
+      <input type="hidden" id="edit-workout-id">
+
+      <div class="form-field">
+        <label class="form-label">Workout Name</label>
+        <input class="form-input" id="aw-name" placeholder="e.g. Candice (VASA)" type="text">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Week / Date Label</label>
+        <input class="form-input" id="aw-week" placeholder="e.g. 05/09" type="text">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Focus</label>
+        <input class="form-input" id="aw-focus" placeholder="e.g. Glutes · Legs" type="text">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Card Color</label>
+        <div class="color-picker">
+          <div class="color-opt selected" data-class="total" style="background:#4fff8f20;border-color:#4fff8f;" onclick="selectColor(this)">🟢</div>
+          <div class="color-opt" data-class="week1" style="background:#e8ff4720;border-color:transparent;" onclick="selectColor(this)">🟡</div>
+          <div class="color-opt" data-class="week2" style="background:#4fa3ff20;border-color:transparent;" onclick="selectColor(this)">🔵</div>
+          <div class="color-opt" data-class="week3" style="background:#ff4f4f20;border-color:transparent;" onclick="selectColor(this)">🔴</div>
+          <div class="color-opt" data-class="upper" style="background:#ff9f4f20;border-color:transparent;" onclick="selectColor(this)">🟠</div>
+          <div class="color-opt" data-class="custom" style="background:#b47fff20;border-color:transparent;" onclick="selectColor(this)">🟣</div>
+        </div>
+      </div>
+
+      <div class="form-section-title">Exercises</div>
+      <div class="form-hint" style="margin-bottom:12px;">
+        Paste the workout below — one exercise per line. Use any of these formats:<br><br>
+        <code style="color:var(--accent);font-size:11px;">Hip Thrust 3x12 60s</code><br>
+        <code style="color:var(--accent);font-size:11px;">Cable Kickback · 3 sets · 15/leg · 45s rest</code><br>
+        <code style="color:var(--accent);font-size:11px;">Leg Press: sets 4, reps 10-12, rest 90</code><br><br>
+        Sets, reps and rest will be parsed automatically.
+      </div>
+      <div class="form-field">
+        <label class="form-label">Exercise List</label>
+        <textarea class="form-textarea" id="aw-exercises" placeholder="Cable Leg Raise 3x12-15 45s&#10;Cable Kickback 3x15 each leg 45s&#10;Barbell Back Squat 3x12-15 45s&#10;Booty Builder 3x12-15 45s"></textarea>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Phase Goal / Notes (optional)</label>
+        <input class="form-input" id="aw-goal" placeholder="e.g. Focus on full range of motion" type="text">
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ══ REST TIMER ══ -->
@@ -646,11 +751,72 @@ const OTHER = [
     ]}
 ];
 
+// ═══════════════════════════════════════════════
+// TRAINER WORKOUTS — loaded live from Supabase
+// ═══════════════════════════════════════════════
+let TRAINER = []; // populated by loadTrainerWorkouts()
+
+async function loadTrainerWorkouts() {
+  try {
+    const rows = await sbSelect('workouts', 'order=created_at.desc');
+    TRAINER = rows.map(dbRowToWorkout);
+    renderTrainerCards();
+    renderArchivedCards();
+  } catch(e) {
+    document.getElementById('trainer-cards').innerHTML =
+      `<div class="trainer-loading" style="color:var(--red)">Could not load trainer workouts: ${e.message}</div>`;
+  }
+}
+
+function dbRowToWorkout(r) {
+  return {
+    id: r.id,
+    name: r.name,
+    week: r.week_label,
+    weekClass: r.week_class || 'total',
+    tag: r.tag || 'Trainer',
+    duration: r.duration || '60 MIN',
+    focus: r.focus || '',
+    model: r.model || 'Trainer Session',
+    phases: r.phases,
+    archived: r.archived || false,
+    _fromDB: true
+  };
+}
+
+function renderTrainerCards() {
+  const el = document.getElementById('trainer-cards');
+  const active = TRAINER.filter(w => !w.archived);
+  if (!active.length) {
+    el.innerHTML = '<div class="trainer-loading">No trainer workouts yet. Tap + Add to create one.</div>';
+    return;
+  }
+  el.innerHTML = '<div class="cards">' + active.map(w => wCard(w, {isCustom:true})).join('') + '</div>';
+}
+
 let CUSTOM = [];
+let ARCHIVED = [];   // hidden from main list, shown in archive section
+let REMOVED = [];    // deleted from custom list entirely
+
+const MANAGE_KEY = 'gymdash_manage';
+function loadManageState() {
+  try {
+    const s = JSON.parse(localStorage.getItem(MANAGE_KEY) || '{}');
+    ARCHIVED = s.archived || [];
+    REMOVED  = s.removed  || [];
+  } catch(e) {}
+}
+function saveManageState() {
+  localStorage.setItem(MANAGE_KEY, JSON.stringify({ archived: ARCHIVED, removed: REMOVED }));
+}
+function isArchived(id) { return ARCHIVED.includes(id); }
+function isRemoved(id)  { return REMOVED.includes(id); }
 
 // ═══════════════════════════════════════════════
 // APP STATE
 // ═══════════════════════════════════════════════
+let manageMode = false;
+let showArchived = false;
 let currentWorkout = null;
 let setData = {};
 let selectedFin = {};
@@ -689,7 +855,7 @@ function restoreSession() {
       clearPersistedSession();
       return false;
     }
-    const all = [...BUILTIN, ...OTHER, ...CUSTOM];
+    const all = [...BUILTIN, ...OTHER, ...TRAINER, ...CUSTOM];
     const workout = all.find(w => w.id === saved.workoutId);
     if (!workout) return false;
     // Restore state
@@ -730,19 +896,49 @@ function switchTab(tab) {
 // HOME
 // ═══════════════════════════════════════════════
 function renderHome() {
-  document.getElementById('builtin-cards').innerHTML = BUILTIN.map(wCard).join('');
-  document.getElementById('other-cards').innerHTML   = OTHER.map(wCard).join('');
+  const visibleBuiltin = BUILTIN.filter(w => !isArchived(w.id) && !isRemoved(w.id));
+  const visibleOther   = OTHER.filter(w => !isArchived(w.id) && !isRemoved(w.id));
+  document.getElementById('builtin-cards').innerHTML = visibleBuiltin.map(w => wCard(w)).join('');
+  document.getElementById('other-cards').innerHTML   = visibleOther.map(w => wCard(w)).join('');
   renderCustomCards();
+  renderTrainerCards();
+  renderArchivedCards();
 }
 function renderCustomCards() {
-  const el = document.getElementById('custom-cards');
+  const el  = document.getElementById('custom-cards');
   const lbl = document.getElementById('custom-label');
-  el.innerHTML = CUSTOM.map(wCard).join('');
-  lbl.style.display = CUSTOM.length ? '' : 'none';
+  const visible = CUSTOM.filter(w => !isArchived(w.id) && !isRemoved(w.id));
+  el.innerHTML = visible.map(w => wCard(w, {isCustom:true})).join('');
+  lbl.style.display = (CUSTOM.length > 0) ? '' : 'none';
 }
-function wCard(w) {
+function renderArchivedCards() {
+  const builtinArchived = [...BUILTIN, ...OTHER, ...CUSTOM].filter(w => isArchived(w.id));
+  const trainerArchived = TRAINER.filter(w => w.archived);
+  const all = [...builtinArchived, ...trainerArchived];
+  const sec = document.getElementById('archive-section');
+  const el  = document.getElementById('archived-cards');
+  sec.style.display = all.length ? '' : 'none';
+  el.innerHTML = all.map(w => wCard(w, {isCustom:true, isArchivedCard:true})).join('');
+}
+function wCard(w, opts={}) {
   const sets = countSets(w);
-  return `<div class="wcard ${w.weekClass}" onclick="startWorkout('${w.id}')">
+  const archived = isArchived(w.id);
+  const isCustom = opts.isCustom || false;
+  const isArchivedCard = opts.isArchivedCard || false;
+  const clickAction = manageMode ? '' : `onclick="startWorkout('${w.id}')"`;
+  const actions = manageMode ? `
+    <div class="wcard-actions">
+      ${isArchivedCard
+        ? `<button class="wcard-action-btn archive-btn" onclick="unarchiveWorkout('${w.id}')">↑ Restore</button>`
+        : `<button class="wcard-action-btn archive-btn" onclick="archiveWorkout('${w.id}')">Archive</button>`}
+      ${w._fromDB && !isArchivedCard
+        ? `<button class="wcard-action-btn" onclick="showAddWorkout('${w.id}')">Edit</button>`
+        : ''}
+      ${isCustom || isArchivedCard
+        ? `<button class="wcard-action-btn danger" onclick="removeWorkout('${w.id}')">Delete</button>`
+        : ''}
+    </div>` : '';
+  return `<div class="wcard ${w.weekClass} ${isArchivedCard?'archived-card':''}" ${clickAction} style="${manageMode?'cursor:default;':''}">
     <div class="card-top"><div class="card-name">${w.name}</div><div class="card-week">${w.week}</div></div>
     <div class="card-meta">${w.focus}</div>
     <div class="card-stats">
@@ -750,13 +946,85 @@ function wCard(w) {
       <div class="card-stat"><span>${w.duration}</span></div>
       <div class="card-stat"><span>${w.tag}</span></div>
     </div>
-    <div class="card-arrow">›</div>
+    ${manageMode ? '' : '<div class="card-arrow">›</div>'}
+    ${actions}
   </div>`;
 }
 function countSets(w) {
   let n = 0;
   w.phases.forEach(p => { if (p.exercises) p.exercises.forEach(e => n += e.sets); });
   return n;
+}
+
+function toggleManage() {
+  manageMode = !manageMode;
+  const btn = document.getElementById('manage-btn');
+  btn.textContent = manageMode ? 'Done' : 'Manage';
+  btn.classList.toggle('active', manageMode);
+  renderHome();
+}
+
+function toggleArchived() {
+  showArchived = !showArchived;
+  document.getElementById('archived-cards').style.display = showArchived ? '' : 'none';
+  document.getElementById('archive-arrow').classList.toggle('open', showArchived);
+}
+
+async function archiveWorkout(id) {
+  const w = TRAINER.find(x => x.id === id);
+  if (w && w._fromDB) {
+    try {
+      await sbFetch(`workouts?id=eq.${id}`, {method:'PATCH', body: JSON.stringify({archived:true})});
+      w.archived = true;
+      renderTrainerCards();
+      renderArchivedCards();
+      showToast('Workout archived', false);
+    } catch(e) { showToast('Failed: ' + e.message, true); }
+  } else {
+    if (!ARCHIVED.includes(id)) ARCHIVED.push(id);
+    saveManageState();
+    renderHome();
+    showToast('Workout archived', false);
+  }
+}
+
+async function unarchiveWorkout(id) {
+  const w = TRAINER.find(x => x.id === id);
+  if (w && w._fromDB) {
+    try {
+      await sbFetch(`workouts?id=eq.${id}`, {method:'PATCH', body: JSON.stringify({archived:false})});
+      w.archived = false;
+      renderTrainerCards();
+      renderArchivedCards();
+      showToast('Workout restored', false);
+    } catch(e) { showToast('Failed: ' + e.message, true); }
+  } else {
+    ARCHIVED = ARCHIVED.filter(x => x !== id);
+    saveManageState();
+    renderHome();
+    showToast('Workout restored', false);
+  }
+}
+
+async function removeWorkout(id) {
+  if (!confirm('Delete this workout permanently?')) return;
+  const w = TRAINER.find(x => x.id === id);
+  if (w && w._fromDB) {
+    try {
+      await sbFetch(`workouts?id=eq.${id}`, {method:'DELETE'});
+      TRAINER = TRAINER.filter(x => x.id !== id);
+      renderTrainerCards();
+      renderArchivedCards();
+      showToast('Workout deleted', false);
+    } catch(e) { showToast('Failed: ' + e.message, true); }
+  } else {
+    REMOVED.push(id);
+    ARCHIVED = ARCHIVED.filter(x => x !== id);
+    CUSTOM = CUSTOM.filter(w => w.id !== id);
+    saveManageState();
+    renderHome();
+    showToast('Workout removed', false);
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -785,7 +1053,7 @@ async function loadFromUrl() {
 // START WORKOUT
 // ═══════════════════════════════════════════════
 function startWorkout(id) {
-  const all = [...BUILTIN, ...OTHER, ...CUSTOM];
+  const all = [...BUILTIN, ...OTHER, ...TRAINER, ...CUSTOM];
   currentWorkout = all.find(w => w.id === id);
   if (!currentWorkout) return;
   setData = {};
@@ -1392,10 +1660,156 @@ function showToast(msg, err=false) {
 }
 
 // ═══════════════════════════════════════════════
+// ADD / EDIT TRAINER WORKOUT
+// ═══════════════════════════════════════════════
+let selectedWeekClass = 'total';
+let editingWorkoutId = null;
+
+function showAddWorkout(workoutId=null) {
+  editingWorkoutId = workoutId;
+  document.getElementById('add-screen-title').textContent = workoutId ? 'Edit Workout' : 'Add Trainer Workout';
+  document.getElementById('add-save-btn').textContent = workoutId ? 'Update' : 'Save';
+  // Clear form
+  document.getElementById('aw-name').value = '';
+  document.getElementById('aw-week').value = '';
+  document.getElementById('aw-focus').value = '';
+  document.getElementById('aw-goal').value = '';
+  document.getElementById('aw-exercises').value = '';
+  document.getElementById('edit-workout-id').value = '';
+  selectedWeekClass = 'total';
+  document.querySelectorAll('.color-opt').forEach(o => {
+    o.style.borderColor = o.dataset.class === 'total' ? 'var(--text)' : 'transparent';
+  });
+  // If editing, populate form
+  if (workoutId) {
+    const w = TRAINER.find(x => x.id === workoutId);
+    if (w) {
+      document.getElementById('aw-name').value = w.name;
+      document.getElementById('aw-week').value = w.week;
+      document.getElementById('aw-focus').value = w.focus || '';
+      document.getElementById('edit-workout-id').value = w.id;
+      selectedWeekClass = w.weekClass || 'total';
+      document.querySelectorAll('.color-opt').forEach(o => {
+        o.style.borderColor = o.dataset.class === selectedWeekClass ? 'var(--text)' : 'transparent';
+      });
+      // Reconstruct exercise text from phases
+      const exLines = [];
+      w.phases.forEach(p => {
+        if (p.goal && !editingWorkoutId) document.getElementById('aw-goal').value = p.goal;
+        if (p.goal) document.getElementById('aw-goal').value = p.goal;
+        if (p.exercises) p.exercises.forEach(e => {
+          exLines.push(`${e.name} ${e.sets}x${e.reps} ${e.rest}s`);
+        });
+      });
+      document.getElementById('aw-exercises').value = exLines.join('
+');
+    }
+  }
+  showScreen('s-add');
+}
+
+function hideAddWorkout() { showScreen('s-home'); }
+
+function selectColor(el) {
+  document.querySelectorAll('.color-opt').forEach(o => o.style.borderColor = 'transparent');
+  el.style.borderColor = 'var(--text)';
+  selectedWeekClass = el.dataset.class;
+}
+
+function parseExercises(text) {
+  const lines = text.trim().split('
+').filter(l => l.trim());
+  return lines.map(line => {
+    // Parse: "Exercise Name SxR Ts" or "Exercise Name · S sets · R reps · Ts rest"
+    let name = line, sets = 3, reps = '12', rest = 60;
+    // Match patterns like "3x12", "3x12-15", "3x15/leg"
+    const setsReps = line.match(/(\d+)\s*[x×]\s*([\d\-\/a-z ]+)/i);
+    if (setsReps) {
+      sets = parseInt(setsReps[1]);
+      reps = setsReps[2].trim();
+      name = line.substring(0, line.indexOf(setsReps[0])).trim();
+    }
+    // Match rest: "45s", "60 sec", "90s rest"
+    const restMatch = line.match(/(\d+)\s*s(?:ec)?/i);
+    if (restMatch) rest = parseInt(restMatch[1]);
+    // Clean up name punctuation
+    name = name.replace(/[·:,\-]+$/, '').trim();
+    if (!name) name = line.trim();
+    return { name, sets, reps: reps.replace(/\s+/g,' '), rest };
+  });
+}
+
+async function saveTrainerWorkout() {
+  const name  = document.getElementById('aw-name').value.trim();
+  const week  = document.getElementById('aw-week').value.trim();
+  const focus = document.getElementById('aw-focus').value.trim();
+  const goal  = document.getElementById('aw-goal').value.trim();
+  const exText= document.getElementById('aw-exercises').value.trim();
+  const editId= document.getElementById('edit-workout-id').value.trim();
+
+  if (!name) { showToast('Enter a workout name', true); return; }
+  if (!exText) { showToast('Add at least one exercise', true); return; }
+
+  const exercises = parseExercises(exText);
+  const phases = [
+    {
+      name: 'Workout',
+      goal: goal || 'Trainer-assigned session. Focus on controlled movement and full range of motion.',
+      exercises
+    },
+    {
+      name: 'Recovery',
+      cooldown: true,
+      cards: [
+        { title: 'Static Stretching — 5 min', desc: 'Hold each stretch 30–45 seconds.' },
+        { title: 'Protein Window', desc: 'Hit your protein goal within 30–60 min post-session.' }
+      ]
+    }
+  ];
+
+  const id = editId || `trainer-${Date.now()}`;
+  const payload = {
+    id,
+    name,
+    week_label: week || new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit'}),
+    week_class: selectedWeekClass,
+    tag: 'Trainer',
+    duration: '60 MIN',
+    focus: focus || 'Trainer Session',
+    model: `Trainer Session`,
+    phases,
+    archived: false
+  };
+
+  const btn = document.getElementById('add-save-btn');
+  btn.textContent = 'Saving…';
+
+  try {
+    if (editId) {
+      await sbFetch(`workouts?id=eq.${editId}`, {method:'PATCH', body: JSON.stringify(payload)});
+      const idx = TRAINER.findIndex(w => w.id === editId);
+      if (idx !== -1) TRAINER[idx] = dbRowToWorkout({...payload, phases});
+    } else {
+      await sbInsert('workouts', payload);
+      TRAINER.unshift(dbRowToWorkout(payload));
+    }
+    renderTrainerCards();
+    renderArchivedCards();
+    hideAddWorkout();
+    showToast(editId ? 'Workout updated ✓' : 'Workout saved ✓', false);
+  } catch(e) {
+    btn.textContent = editId ? 'Update' : 'Save';
+    showToast('Save failed: ' + e.message, true);
+  }
+}
+
+// ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════
 loadConfig();
+loadManageState();
 renderHome();
+loadTrainerWorkouts();
 checkForResume();
 
 function checkForResume() {
@@ -1404,7 +1818,7 @@ function checkForResume() {
     if (!raw) return;
     const saved = JSON.parse(raw);
     if (Date.now() - saved.savedAt > 6 * 60 * 60 * 1000) { clearPersistedSession(); return; }
-    const all = [...BUILTIN, ...OTHER, ...CUSTOM];
+        const all = [...BUILTIN, ...OTHER, ...TRAINER, ...CUSTOM];
     const workout = all.find(w => w.id === saved.workoutId);
     if (!workout) return;
     // Show resume banner
