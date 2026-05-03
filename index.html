@@ -698,27 +698,38 @@ const OTHER = [
 
 // ═══════════════════════════════════════════════
 // TRAINER WORKOUTS — fetched from GitHub /workouts/
-// Add a file to index.json to register a new workout
+// Drop any .json file into /workouts/ on GitHub — loads automatically
 // ═══════════════════════════════════════════════
 let TRAINER = []; // populated by loadTrainerWorkouts()
 
-const GITHUB_BASE  = 'https://raw.githubusercontent.com/AZDVHS/EstherGymApp/main/workouts/';
-const GITHUB_INDEX = GITHUB_BASE + 'index.json';
+const GITHUB_RAW      = 'https://raw.githubusercontent.com/AZDVHS/EstherGymApp/main/workouts/';
+const GITHUB_API_TREE = 'https://api.github.com/repos/AZDVHS/EstherGymApp/contents/workouts';
 
 async function loadTrainerWorkouts() {
   const el = document.getElementById('trainer-cards');
   try {
-    const idxRes = await fetch(GITHUB_INDEX + '?t=' + Date.now());
-    if (!idxRes.ok) throw new Error('index.json not found');
-    const filenames = await idxRes.json();
+    // Use GitHub API to list all files in /workouts/ — no index.json needed
+    const apiRes = await fetch(GITHUB_API_TREE + '?t=' + Date.now());
+    if (!apiRes.ok) throw new Error('Could not read workouts folder');
+    const files = await apiRes.json();
+
+    // Filter to only .json files
+    const jsonFiles = files.filter(f => f.name.endsWith('.json') && f.type === 'file');
+    if (!jsonFiles.length) throw new Error('No workouts found');
+
+    // Fetch each workout file in parallel using the raw download URL
     const results = await Promise.allSettled(
-      filenames.map(f => fetch(GITHUB_BASE + f + '?t=' + Date.now()).then(r => { if(!r.ok) throw new Error(f); return r.json(); }))
+      jsonFiles.map(f => fetch(f.download_url + '?t=' + Date.now()).then(r => r.json()))
     );
-    TRAINER = results.filter(r => r.status === 'fulfilled').map(r => ({...r.value, _fromGH: true}));
+
+    TRAINER = results
+      .filter(r => r.status === 'fulfilled')
+      .map(r => ({ ...r.value, _fromGH: true }));
+
     renderTrainerCards();
     renderArchivedCards();
   } catch(e) {
-    el.innerHTML = `<div class="trainer-loading">No trainer workouts yet — add an index.json to /workouts/ on GitHub.</div>`;
+    el.innerHTML = `<div class="trainer-loading">Drop .json files into /workouts/ on GitHub — they'll appear here automatically.</div>`;
   }
 }
 
