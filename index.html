@@ -220,12 +220,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .toast.err{background:var(--red);}
 
 /* HISTORY DELETE */
-.hist-wrap{position:relative;margin:0 20px 10px;overflow:hidden;border-radius:var(--r);}
-.hist-delete-bg{position:absolute;right:0;top:0;bottom:0;width:80px;background:var(--red);display:flex;align-items:center;justify-content:center;border-radius:var(--r);}
-.hist-delete-bg span{color:#fff;font-size:12px;font-weight:700;}
-.hist-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;cursor:pointer;transition:transform .25s ease;position:relative;z-index:1;}
-.hist-card.swiped{transform:translateX(-80px);}
+.hist-wrap{margin:0 20px 10px;}
+.hist-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:10px;}
 .hist-card:active{background:var(--surface2);}
+.hist-card-body{flex:1;min-width:0;}
+.hist-del-btn{width:36px;height:36px;border-radius:50%;background:var(--surface3);border:none;color:var(--text3);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.hist-del-btn:active{background:var(--red-dim);color:var(--red);}
 
 /* WEIGHT MEMORY */
 .set-wt-prev{font-size:10px;color:var(--text3);text-align:center;margin-top:2px;font-style:italic;}
@@ -1167,43 +1167,8 @@ async function copyShareText() {
 function restartWorkout() { startWorkout(currentWorkout.id); }
 
 // ═══════════════════════════════════════════════
-// HISTORY SWIPE TO DELETE
+// HISTORY DELETE
 // ═══════════════════════════════════════════════
-let swipeStartX = 0;
-let swipeStartY = 0;
-let activeSwipe = null;
-
-function swipeStart(e, id) {
-  swipeStartX = e.touches[0].clientX;
-  swipeStartY = e.touches[0].clientY;
-  activeSwipe = id;
-}
-
-function swipeEnd(e, id) {
-  const dx = swipeStartX - e.changedTouches[0].clientX;
-  const dy = Math.abs(swipeStartY - e.changedTouches[0].clientY);
-  if (dy > 40) return; // vertical scroll, ignore
-  const card = document.getElementById(`hc-${id}`);
-  if (!card) return;
-  if (dx > 50) {
-    // Swipe left — reveal delete
-    // Close any other open swipes first
-    document.querySelectorAll('.hist-card.swiped').forEach(c => {
-      if (c.id !== `hc-${id}`) c.classList.remove('swiped');
-    });
-    card.classList.add('swiped');
-    e.preventDefault();
-  } else if (dx < -20) {
-    // Swipe right — close
-    card.classList.remove('swiped');
-  } else if (Math.abs(dx) < 8) {
-    // Tap — only navigate if not swiped
-    if (!card.classList.contains('swiped')) return; // let onclick fire
-    card.classList.remove('swiped');
-    e.preventDefault();
-  }
-}
-
 async function deleteSession(id) {
   if (!confirm('Delete this session? This cannot be undone.')) return;
   try {
@@ -1232,20 +1197,19 @@ async function loadHistory() {
     el.innerHTML = rows.map(r => {
       const rd = JSON.stringify(r).replace(/"/g,'&quot;');
       return `<div class="hist-wrap" id="hw-${r.id}">
-        <div class="hist-delete-bg" onclick="deleteSession('${r.id}')"><span>🗑 Delete</span></div>
-        <div class="hist-card" id="hc-${r.id}"
-          onclick="showDetail(${rd})"
-          ontouchstart="swipeStart(event,'${r.id}')"
-          ontouchend="swipeEnd(event,'${r.id}')">
-          <div class="hist-top">
-            <div class="hist-name">${r.workout_name} <span style="font-weight:400;color:var(--text2);font-size:12px;">${r.week_label}</span></div>
-            <div class="hist-date">${fmtDate(r.created_at)}</div>
+        <div class="hist-card" onclick="showDetail(${rd})">
+          <div class="hist-card-body">
+            <div class="hist-top">
+              <div class="hist-name">${r.workout_name} <span style="font-weight:400;color:var(--text2);font-size:12px;">${r.week_label}</span></div>
+              <div class="hist-date">${fmtDate(r.created_at)}</div>
+            </div>
+            <div class="hist-row">
+              <div class="hist-stat"><b>${r.sets_completed}</b> sets</div>
+              <div class="hist-stat"><b>${(r.total_volume_lbs||0).toLocaleString()}</b> lbs</div>
+              <div class="hist-stat"><b>${r.duration_minutes}</b> min</div>
+            </div>
           </div>
-          <div class="hist-row">
-            <div class="hist-stat"><b>${r.sets_completed}</b> sets</div>
-            <div class="hist-stat"><b>${(r.total_volume_lbs||0).toLocaleString()}</b> lbs</div>
-            <div class="hist-stat"><b>${r.duration_minutes}</b> min</div>
-          </div>
+          <button class="hist-del-btn" onclick="event.stopPropagation();deleteSession('${r.id}')">🗑</button>
         </div>
       </div>`;
     }).join('');
