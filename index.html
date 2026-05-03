@@ -403,7 +403,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 <!-- ══ SESSION DETAIL ══ -->
 <div class="screen hidden" id="s-detail">
   <div class="hdr">
-    <button class="hdr-back" onclick="showScreen('s-home',true)">‹</button>
+    <button class="hdr-back" onclick="showScreen('s-home')">‹</button>
     <div style="flex:1">
       <div class="hdr-title" id="det-title">Session</div>
       <div class="hdr-sub" id="det-date"></div>
@@ -1266,21 +1266,17 @@ async function loadProgress() {
 // ═══════════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════════
-function showScreen(id, back=false) {
+function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => {
     s.classList.remove('back');
     s.classList.add('hidden');
   });
-  if (back) {
-    document.getElementById(id).classList.remove('hidden');
-  } else {
-    document.getElementById(id).classList.remove('hidden');
-  }
+  document.getElementById(id).classList.remove('hidden');
 }
 function goHome() {
   clearRest();
   currentWorkout = null;
-  showScreen('s-home', true);
+  showScreen('s-home');
   switchTab('workouts');
 }
 function abandonWorkout() {
@@ -1288,7 +1284,7 @@ function abandonWorkout() {
   clearPersistedSession();
   currentWorkout = null;
   clearRest();
-  showScreen('s-home', true);
+  showScreen('s-home');
   switchTab('workouts');
 }
 
@@ -1342,20 +1338,28 @@ function showResumeBanner(workout, done, total, saved) {
 }
 
 function resumeSession(id) {
-  dismissResume();
+  // Restore FIRST before clearing anything
   if (restoreSession()) {
+    hideBanner(); // just remove the UI element, keep localStorage until finish
     document.getElementById('w-hdr-title').textContent = currentWorkout.name;
     document.getElementById('w-hdr-sub').textContent = `${currentWorkout.week} · ${currentWorkout.model || currentWorkout.focus}`;
     document.getElementById('w-hdr-badge').textContent = currentWorkout.duration;
     renderWorkout();
     showScreen('s-workout');
+  } else {
+    showToast('Could not restore session', true);
+    dismissResume();
   }
+}
+
+function hideBanner() {
+  const b = document.getElementById('resume-banner');
+  if (b) b.remove();
 }
 
 function dismissResume() {
   clearPersistedSession();
-  const b = document.getElementById('resume-banner');
-  if (b) b.remove();
+  hideBanner();
 }
 </script>
 </body>
