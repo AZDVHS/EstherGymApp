@@ -1006,7 +1006,6 @@ async function showComplete() {
       workout_id: currentWorkout.id,
       workout_name: currentWorkout.name,
       week_label: currentWorkout.week,
-      tag: currentWorkout.tag,
       sets_completed: doneSets,
       total_volume_lbs: volRounded,
       duration_minutes: elapsed,
@@ -1117,7 +1116,7 @@ async function loadHistory() {
           <div class="hist-stat"><b>${r.sets_completed}</b> sets</div>
           <div class="hist-stat"><b>${(r.total_volume_lbs||0).toLocaleString()}</b> lbs</div>
           <div class="hist-stat"><b>${r.duration_minutes}</b> min</div>
-          <div class="hist-stat" style="color:var(--text3)">${r.tag||''}</div>
+
         </div>
       </div>`).join('');
   } catch(e) { el.innerHTML = `<div class="hist-empty">Error: ${e.message}</div>`; }
