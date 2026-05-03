@@ -219,6 +219,19 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .toast.show{transform:translateY(0);}
 .toast.err{background:var(--red);}
 
+/* HISTORY DELETE */
+.hist-wrap{position:relative;margin:0 20px 10px;overflow:hidden;border-radius:var(--r);}
+.hist-delete-bg{position:absolute;right:0;top:0;bottom:0;width:80px;background:var(--red);display:flex;align-items:center;justify-content:center;border-radius:var(--r);}
+.hist-delete-bg span{color:#fff;font-size:12px;font-weight:700;}
+.hist-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;cursor:pointer;transition:transform .25s ease;position:relative;z-index:1;}
+.hist-card.swiped{transform:translateX(-80px);}
+.hist-card:active{background:var(--surface2);}
+
+/* WEIGHT MEMORY */
+.set-wt-prev{font-size:10px;color:var(--text3);text-align:center;margin-top:2px;font-style:italic;}
+.wt-autofill-row{display:flex;align-items:center;justify-content:flex-end;padding:0 4px 6px;gap:6px;}
+.btn-autofill{font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-weight:700;padding:2px 6px;}
+
 /* SETUP */
 
 .spin{width:28px;height:28px;border:3px solid var(--surface3);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto;}
@@ -431,6 +444,24 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 <div class="toast" id="toast"></div>
 
 <script>
+// ═══════════════════════════════════════════════
+// WEIGHT MEMORY — per exercise, persists across sessions
+// ═══════════════════════════════════════════════
+const WEIGHT_KEY = 'gymdash_weights';
+function loadWeightMemory() {
+  try { return JSON.parse(localStorage.getItem(WEIGHT_KEY) || '{}'); } catch(e) { return {}; }
+}
+function saveWeightMemory(exName, weight) {
+  if (!weight || parseFloat(weight) <= 0) return;
+  const mem = loadWeightMemory();
+  mem[exName.toLowerCase().trim()] = weight;
+  localStorage.setItem(WEIGHT_KEY, JSON.stringify(mem));
+}
+function getLastWeight(exName) {
+  const mem = loadWeightMemory();
+  return mem[exName.toLowerCase().trim()] || '';
+}
+
 // ═══════════════════════════════════════════════
 // CONFIG — hardcoded, always connected
 // ═══════════════════════════════════════════════
@@ -798,6 +829,9 @@ function renderEx(ex, pi, ei) {
   const key = `${pi}-${ei}`;
   const sets = setData[key] || [];
   const allDone = sets.length > 0 && sets.every(s => s.done);
+  const lastWt = getLastWeight(ex.name);
+  // Pre-fill sets from memory if no weight entered yet
+  sets.forEach(s => { if (!s.weight && lastWt) s.weight = lastWt; });
   let badges = (ex.badges||[]).map(b => `<span class="ex-badge badge-${b.type}">${b.label}</span>`).join('');
   let sHtml = `<div class="sets-hdr"><div class="sh-set">SET</div><div class="sh-tgt">TARGET</div><div class="sh-wt">WEIGHT</div><div class="sh-done">DONE</div></div>`;
   sets.forEach((s,si) => {
@@ -805,8 +839,11 @@ function renderEx(ex, pi, ei) {
       <div class="set-num">S${si+1}</div>
       <div class="set-tgt">${ex.reps}</div>
       <div class="set-wt">
-        <input class="set-wt-input" type="number" inputmode="decimal" placeholder="0" value="${s.weight}"
-          onchange="updateWt(${pi},${ei},${si},this.value)" onfocus="this.select()">
+        <input class="set-wt-input" type="number" inputmode="decimal"
+          placeholder="${lastWt || '0'}" value="${s.weight}"
+          onchange="updateWt(${pi},${ei},${si},this.value)"
+          oninput="${si===0 ? `autoFillWeight(${pi},${ei},this.value)` : ''}"
+          onfocus="this.select()">
         <span class="set-wt-unit">lbs</span>
       </div>
       <div class="set-done-col">
@@ -816,6 +853,10 @@ function renderEx(ex, pi, ei) {
       </div>
     </div>`;
   });
+  // Show last session weight hint under the header if we have memory
+  if (lastWt) {
+    sHtml = `<div class="wt-autofill-row"><span style="font-size:11px;color:var(--text3);">Last session: <b style="color:var(--text2);">${lastWt} lbs</b></span></div>` + sHtml;
+  }
   let tip = ex.tip ? `<div class="tip-box"><b>${ex.tip.label}</b> ${ex.tip.text}</div>` : '';
   return `<div class="ex-card ${allDone?'completed':''}" id="ex-${pi}-${ei}">
     <div class="ex-hdr">
@@ -849,12 +890,40 @@ function renderCool(p) {
 // ═══════════════════════════════════════════════
 // SET INTERACTIONS
 // ═══════════════════════════════════════════════
-function updateWt(pi,ei,si,v) { setData[`${pi}-${ei}`][si].weight = v; }
+function updateWt(pi,ei,si,v,isFirst=false) {
+  setData[`${pi}-${ei}`][si].weight = v;
+  // Save to weight memory whenever any set weight is set
+  const ex = currentWorkout.phases[pi].exercises[ei];
+  if (v && parseFloat(v) > 0) saveWeightMemory(ex.name, v);
+  persistSession();
+}
+
+function autoFillWeight(pi, ei, val) {
+  // When set 1 weight is typed, auto-fill all empty sets in this exercise
+  if (!val || parseFloat(val) <= 0) return;
+  const key = `${pi}-${ei}`;
+  const sets = setData[key];
+  sets.forEach((s, si) => {
+    if (si === 0) return; // skip set 1, already being typed
+    if (!s.done) { // don't overwrite completed sets
+      s.weight = val;
+      const input = document.getElementById(`sr-${pi}-${ei}-${si}`)?.querySelector('.set-wt-input');
+      if (input) input.value = val;
+    }
+  });
+  const ex = currentWorkout.phases[pi].exercises[ei];
+  saveWeightMemory(ex.name, val);
+}
 
 function toggleSet(pi,ei,si,restSecs) {
   const key = `${pi}-${ei}`;
   const s = setData[key][si];
   s.done = !s.done;
+  // Save weight to memory when set is marked done
+  if (s.done && s.weight && parseFloat(s.weight) > 0) {
+    const ex = currentWorkout.phases[pi].exercises[ei];
+    saveWeightMemory(ex.name, s.weight);
+  }
   const row = document.getElementById(`sr-${pi}-${ei}-${si}`);
   const btn = row.querySelector('.set-chk');
   if (s.done) {
@@ -1098,6 +1167,60 @@ async function copyShareText() {
 function restartWorkout() { startWorkout(currentWorkout.id); }
 
 // ═══════════════════════════════════════════════
+// HISTORY SWIPE TO DELETE
+// ═══════════════════════════════════════════════
+let swipeStartX = 0;
+let swipeStartY = 0;
+let activeSwipe = null;
+
+function swipeStart(e, id) {
+  swipeStartX = e.touches[0].clientX;
+  swipeStartY = e.touches[0].clientY;
+  activeSwipe = id;
+}
+
+function swipeEnd(e, id) {
+  const dx = swipeStartX - e.changedTouches[0].clientX;
+  const dy = Math.abs(swipeStartY - e.changedTouches[0].clientY);
+  if (dy > 40) return; // vertical scroll, ignore
+  const card = document.getElementById(`hc-${id}`);
+  if (!card) return;
+  if (dx > 50) {
+    // Swipe left — reveal delete
+    // Close any other open swipes first
+    document.querySelectorAll('.hist-card.swiped').forEach(c => {
+      if (c.id !== `hc-${id}`) c.classList.remove('swiped');
+    });
+    card.classList.add('swiped');
+    e.preventDefault();
+  } else if (dx < -20) {
+    // Swipe right — close
+    card.classList.remove('swiped');
+  } else if (Math.abs(dx) < 8) {
+    // Tap — only navigate if not swiped
+    if (!card.classList.contains('swiped')) return; // let onclick fire
+    card.classList.remove('swiped');
+    e.preventDefault();
+  }
+}
+
+async function deleteSession(id) {
+  if (!confirm('Delete this session? This cannot be undone.')) return;
+  try {
+    const r = await sbFetch(`workout_sessions?id=eq.${id}`, { method: 'DELETE' });
+    if (!r.ok) throw new Error(await r.text());
+    // Remove from DOM immediately
+    const wrap = document.getElementById(`hw-${id}`);
+    if (wrap) wrap.remove();
+    showToast('Session deleted', false);
+    // Reload progress if on that tab
+    if (currentTab === 'progress') loadProgress();
+  } catch(e) {
+    showToast('Delete failed: ' + e.message, true);
+  }
+}
+
+// ═══════════════════════════════════════════════
 // HISTORY
 // ═══════════════════════════════════════════════
 async function loadHistory() {
@@ -1106,19 +1229,26 @@ async function loadHistory() {
   try {
     const rows = await sbSelect('workout_sessions', 'order=created_at.desc&limit=30');
     if (!rows.length) { el.innerHTML = '<div class="hist-empty">No sessions yet. Complete a workout to start tracking.</div>'; return; }
-    el.innerHTML = rows.map(r => `
-      <div class="hist-card" onclick="showDetail(${JSON.stringify(r).replace(/"/g,'&quot;')})">
-        <div class="hist-top">
-          <div class="hist-name">${r.workout_name} <span style="font-weight:400;color:var(--text2);font-size:12px;">${r.week_label}</span></div>
-          <div class="hist-date">${fmtDate(r.created_at)}</div>
+    el.innerHTML = rows.map(r => {
+      const rd = JSON.stringify(r).replace(/"/g,'&quot;');
+      return `<div class="hist-wrap" id="hw-${r.id}">
+        <div class="hist-delete-bg" onclick="deleteSession('${r.id}')"><span>🗑 Delete</span></div>
+        <div class="hist-card" id="hc-${r.id}"
+          onclick="showDetail(${rd})"
+          ontouchstart="swipeStart(event,'${r.id}')"
+          ontouchend="swipeEnd(event,'${r.id}')">
+          <div class="hist-top">
+            <div class="hist-name">${r.workout_name} <span style="font-weight:400;color:var(--text2);font-size:12px;">${r.week_label}</span></div>
+            <div class="hist-date">${fmtDate(r.created_at)}</div>
+          </div>
+          <div class="hist-row">
+            <div class="hist-stat"><b>${r.sets_completed}</b> sets</div>
+            <div class="hist-stat"><b>${(r.total_volume_lbs||0).toLocaleString()}</b> lbs</div>
+            <div class="hist-stat"><b>${r.duration_minutes}</b> min</div>
+          </div>
         </div>
-        <div class="hist-row">
-          <div class="hist-stat"><b>${r.sets_completed}</b> sets</div>
-          <div class="hist-stat"><b>${(r.total_volume_lbs||0).toLocaleString()}</b> lbs</div>
-          <div class="hist-stat"><b>${r.duration_minutes}</b> min</div>
-
-        </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   } catch(e) { el.innerHTML = `<div class="hist-empty">Error: ${e.message}</div>`; }
 }
 
