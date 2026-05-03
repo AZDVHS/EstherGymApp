@@ -1,0 +1,72 @@
+{
+  "id": "candice-vasa-0502",
+  "name": "Candice (VASA)",
+  "week": "05/02",
+  "weekClass": "total",
+  "tag": "Weight Training",
+  "duration": "60 MIN",
+  "focus": "Glutes · Legs",
+  "model": "Trainer Session — Candice",
+  "phases": [
+    {
+      "name": "Weight Training",
+      "goal": "Trainer-assigned session from Candice. Focus on controlled movement and full range of motion on every rep.",
+      "exercises": [
+        {
+          "name": "Cable Leg Raise",
+          "sets": 3,
+          "reps": "12–15/leg",
+          "rest": 45,
+          "tip": {
+            "label": "Form tip:",
+            "text": "Keep your core braced and control the movement — avoid swinging the leg. Full extension at the top."
+          }
+        },
+        {
+          "name": "Cable Kickback",
+          "sets": 3,
+          "reps": "15/leg",
+          "rest": 45,
+          "tip": {
+            "label": "Form tip:",
+            "text": "Squeeze the glute hard at the top of each rep. Keep hips square — don't rotate to get extra range."
+          }
+        },
+        {
+          "name": "Barbell Back Squat (Heels Elevated)",
+          "sets": 3,
+          "reps": "12–15",
+          "rest": 45,
+          "tip": {
+            "label": "Heels elevated:",
+            "text": "Elevating the heels increases quad and glute activation. Drive knees out and keep chest tall through the whole rep."
+          }
+        },
+        {
+          "name": "Booty Builder",
+          "sets": 3,
+          "reps": "12–15",
+          "rest": 45,
+          "tip": {
+            "label": "Form tip:",
+            "text": "Full squeeze at peak contraction every rep. Control the eccentric — don't let it drop."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Recovery",
+      "cooldown": true,
+      "cards": [
+        {
+          "title": "Static Stretching — 5 min",
+          "desc": "Hip flexors, glutes, hamstrings. Hold each stretch 30–45 seconds."
+        },
+        {
+          "title": "Protein Window",
+          "desc": "Hit your protein goal within 30–60 min post-session to kickstart recovery."
+        }
+      ]
+    }
+  ]
+}
