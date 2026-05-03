@@ -702,46 +702,52 @@ const OTHER = [
 // ═══════════════════════════════════════════════
 let TRAINER = []; // populated by loadTrainerWorkouts()
 
-const GITHUB_RAW      = 'https://raw.githubusercontent.com/AZDVHS/EstherGymApp/main/workouts/';
-const GITHUB_API_TREE = 'https://api.github.com/repos/AZDVHS/EstherGymApp/contents/workouts';
+const GITHUB_RAW  = 'https://raw.githubusercontent.com/AZDVHS/EstherGymApp/main/workouts/';
+const GITHUB_TREE = 'https://api.github.com/repos/AZDVHS/EstherGymApp/git/trees/main?recursive=1';
 
 async function loadTrainerWorkouts() {
   const el = document.getElementById('trainer-cards');
   try {
-    // Use GitHub API to list all files in /workouts/
-    const apiRes = await fetch(GITHUB_API_TREE, {
-      headers: { 'Accept': 'application/vnd.github.v3+json' },
-      cache: 'no-store'
+    // Use Git Tree API — single call, lists all files in repo
+    const treeRes = await fetch(GITHUB_TREE, {
+      headers: { 'Accept': 'application/vnd.github.v3+json' }
     });
-    if (!apiRes.ok) {
-      const err = await apiRes.json().catch(() => ({}));
-      throw new Error(err.message || `GitHub API ${apiRes.status}`);
+    if (!treeRes.ok) throw new Error('GitHub API ' + treeRes.status);
+    const tree = await treeRes.json();
+
+    // Find all .json files inside /workouts/ folder
+    const workoutFiles = (tree.tree || [])
+      .filter(f => f.path.startsWith('workouts/') && f.path.endsWith('.json') && f.type === 'blob')
+      .map(f => f.path.replace('workouts/', ''));
+
+    if (!workoutFiles.length) {
+      el.innerHTML = '<div class="trainer-loading">No trainer workouts yet — drop a .json file into /workouts/ on GitHub.</div>';
+      return;
     }
-    const files = await apiRes.json();
 
-    // Filter to only .json files
-    const jsonFiles = Array.isArray(files) ? files.filter(f => f.name.endsWith('.json') && f.type === 'file') : [];
-    if (!jsonFiles.length) throw new Error('No workout files found');
-
-    // Fetch each workout file in parallel using raw URL
+    // Fetch each workout JSON from raw.githubusercontent.com
     const results = await Promise.allSettled(
-      jsonFiles.map(f => fetch(f.download_url, { cache: 'no-store' }).then(r => {
-        if (!r.ok) throw new Error(f.name);
-        return r.json();
-      }))
+      workoutFiles.map(fname =>
+        fetch(GITHUB_RAW + fname).then(r => {
+          if (!r.ok) throw new Error(fname + ' not found');
+          return r.json();
+        })
+      )
     );
 
     TRAINER = results
       .filter(r => r.status === 'fulfilled')
+      .filter(r => r.value && r.value.id && Array.isArray(r.value.phases))
       .map(r => ({ ...r.value, _fromGH: true }));
+
+    if (!TRAINER.length) throw new Error('No valid workout files loaded');
 
     renderTrainerCards();
     renderArchivedCards();
   } catch(e) {
     console.error('loadTrainerWorkouts:', e);
     el.innerHTML = `<div class="trainer-loading" style="color:var(--orange);">
-      Trainer workouts: ${e.message}<br>
-      <span style="font-size:11px;color:var(--text3);">Check that /workouts/ folder exists on GitHub</span>
+      Could not load trainer workouts: ${e.message}
     </div>`;
   }
 }
@@ -912,7 +918,8 @@ function wCard(w, opts={}) {
 }
 function countSets(w) {
   let n = 0;
-  w.phases.forEach(p => { if (p.exercises) p.exercises.forEach(e => n += e.sets); });
+  if (!w || !Array.isArray(w.phases)) return 0;
+  w.phases.forEach(p => { if (p.exercises) p.exercises.forEach(e => n += (e.sets || 0)); });
   return n;
 }
 
