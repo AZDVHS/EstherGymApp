@@ -1,0 +1,98 @@
+{
+  "id": "hiit-cardio-full-floor",
+  "name": "HIIT Cardio",
+  "week": "FULL FLOOR",
+  "weekClass": "week3",
+  "tag": "Cardio",
+  "duration": "50 MIN",
+  "focus": "Fat Burn · Conditioning · Endurance",
+  "model": "Interval Training — Work / Rest Protocol",
+  "phases": [
+    {
+      "name": "Warm-Up",
+      "goal": "Get the heart rate up gradually before hitting intervals. Do not skip this — cold muscles and HIIT is a recipe for injury.",
+      "exercises": [
+        {
+          "name": "Treadmill — Easy Walk/Jog",
+          "sets": 1,
+          "reps": "5 min",
+          "rest": 0,
+          "tip": { "label": "Pace:", "text": "Start at a comfortable walk (3.0–3.5 mph), bump to a light jog (4.5–5.5 mph) for the last 2 minutes. Incline at 1%." }
+        },
+        {
+          "name": "Elliptical — Moderate Pace",
+          "sets": 1,
+          "reps": "3 min",
+          "rest": 0,
+          "tip": { "label": "Goal:", "text": "Resistance level 6–8. Keep RPM above 70. This primes the hips and shoulders before intervals." }
+        }
+      ]
+    },
+    {
+      "name": "Block 1 — Bike Intervals",
+      "goal": "Stationary or assault bike. All-out effort on work intervals — you should not be able to hold a conversation.",
+      "exercises": [
+        {
+          "name": "Bike Sprint",
+          "sets": 6,
+          "reps": "20s ON",
+          "rest": 40,
+          "tip": { "label": "Effort:", "text": "RPE 9–10 on the sprint. Max resistance you can sustain for 20 seconds. Spin down completely in the 40s rest — don't keep pedaling." }
+        }
+      ]
+    },
+    {
+      "name": "Block 2 — Rower Intervals",
+      "goal": "Full body explosive effort. Drive with the legs first — 60% legs, 20% core, 20% arms. Keep the chain level.",
+      "exercises": [
+        {
+          "name": "Row — Hard Effort",
+          "sets": 5,
+          "reps": "30s ON",
+          "rest": 30,
+          "tip": { "label": "Target:", "text": "Aim for a split time under 2:10/500m on each interval. If the monitor is confusing, just pull as hard as possible for 30 seconds." }
+        }
+      ]
+    },
+    {
+      "name": "Block 3 — Stairmaster Climb",
+      "goal": "Sustained high-intensity effort targeting glutes and cardiovascular system together. No holding the rails — it defeats the purpose.",
+      "exercises": [
+        {
+          "name": "Stairmaster — Interval Climb",
+          "sets": 4,
+          "reps": "60s fast / 60s moderate",
+          "rest": 0,
+          "tip": { "label": "Protocol:", "text": "Fast = level 10–12. Moderate = level 6–7. Alternate without stopping. Hands lightly touching rails for balance only — not supporting weight." }
+        }
+      ]
+    },
+    {
+      "name": "Block 4 — Treadmill Finisher",
+      "goal": "Empty the tank. Sprint intervals to finish. This is the hardest block — push through it.",
+      "exercises": [
+        {
+          "name": "Treadmill Sprint",
+          "sets": 5,
+          "reps": "20s ON",
+          "rest": 40,
+          "tip": { "label": "Speed:", "text": "Set treadmill to 8.0–10.0 mph (or the fastest you can safely sustain for 20 seconds). Jump on the rails to reset between intervals, not the belt." }
+        }
+      ]
+    },
+    {
+      "name": "Cool-Down",
+      "cooldown": true,
+      "cards": [
+        {
+          "title": "Easy Walk — 5 min",
+          "desc": "Treadmill at 2.5–3.0 mph, flat. Let heart rate come down below 120 bpm before stopping completely."
+        },
+        {
+          "title": "Stretch — 5 min",
+          "desc": "Hip flexors, quads, hamstrings, calves. Hold each 30–40 seconds. Hydrate — you just did serious work."
+        }
+      ]
+    }
+  ]
+}
