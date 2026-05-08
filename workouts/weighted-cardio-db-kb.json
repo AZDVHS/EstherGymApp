@@ -1,0 +1,151 @@
+{
+  "id": "weighted-cardio-db-kb",
+  "name": "Weighted Cardio",
+  "week": "DB + KB",
+  "weekClass": "week3",
+  "tag": "Cardio",
+  "duration": "50 MIN",
+  "focus": "Fat Burn · Full Body · Conditioning",
+  "model": "Weighted Circuit — Dumbbells & Kettlebells",
+  "phases": [
+    {
+      "name": "Warm-Up — Bike or Rower",
+      "goal": "One machine, one purpose — get the body temperature up before loading it. Keep it easy. This is not the workout.",
+      "exercises": [
+        {
+          "name": "Bike or Rower — Easy Pace",
+          "sets": 1,
+          "reps": "8 min",
+          "rest": 0,
+          "tip": { "label": "Pace:", "text": "RPE 5 — comfortable, conversational. Gradually increase resistance every 2 minutes. Finish with 1 minute at a moderate push, then step off and go straight to the floor." }
+        }
+      ]
+    },
+    {
+      "name": "Circuit 1 — Lower Body Power",
+      "goal": "Kettlebell-driven lower body circuit. Move fast between exercises, rest only at the end of the full round. 3 rounds total.",
+      "exercises": [
+        {
+          "name": "Kettlebell Swing",
+          "sets": 3,
+          "reps": "20 reps",
+          "rest": 0,
+          "tip": { "label": "Form:", "text": "Hinge at the hips — not a squat. Drive the hips forward explosively. The bell should float to chest height. Keep the core braced throughout." }
+        },
+        {
+          "name": "Dumbbell Goblet Squat",
+          "sets": 3,
+          "reps": "15 reps",
+          "rest": 0,
+          "tip": { "label": "Tempo:", "text": "2 seconds down, explode up. Hold the dumbbell at chest height. Elbows inside the knees at the bottom." }
+        },
+        {
+          "name": "Kettlebell Sumo Deadlift",
+          "sets": 3,
+          "reps": "15 reps",
+          "rest": 60,
+          "tip": { "label": "Rest:", "text": "60 seconds after completing all 3 exercises then repeat. Keep rest between exercises to zero." }
+        }
+      ]
+    },
+    {
+      "name": "Circuit 2 — Upper Body Conditioning",
+      "goal": "Dumbbell upper body circuit. Keep the weights moderate — this is cardiovascular work, not max strength. Speed matters.",
+      "exercises": [
+        {
+          "name": "Dumbbell Renegade Row",
+          "sets": 3,
+          "reps": "10 reps each side",
+          "rest": 0,
+          "tip": { "label": "Form:", "text": "Plank position, feet wide for stability. Row one dumbbell at a time, keeping hips square. No rocking." }
+        },
+        {
+          "name": "Dumbbell Push Press",
+          "sets": 3,
+          "reps": "12 reps",
+          "rest": 0,
+          "tip": { "label": "Drive:", "text": "Slight dip at the knees then drive the dumbbells overhead using leg momentum. This is what makes it cardio — the full body drive." }
+        },
+        {
+          "name": "Dumbbell Bent-Over Row",
+          "sets": 3,
+          "reps": "12 reps",
+          "rest": 60,
+          "tip": { "label": "Rest:", "text": "60 seconds after completing all 3 exercises then repeat. Keep a flat back — hinge to 45 degrees and pull elbows back." }
+        }
+      ]
+    },
+    {
+      "name": "Circuit 3 — Full Body Burners",
+      "goal": "The hardest block. Full body compound movements with minimal rest. Heart rate will spike — push through it.",
+      "exercises": [
+        {
+          "name": "Kettlebell Clean & Press",
+          "sets": 3,
+          "reps": "8 reps each side",
+          "rest": 0,
+          "tip": { "label": "Movement:", "text": "Clean the bell to rack position at the shoulder, then press overhead. One fluid motion — clean and press without pausing too long at rack." }
+        },
+        {
+          "name": "Dumbbell Thruster (Squat to Press)",
+          "sets": 3,
+          "reps": "12 reps",
+          "rest": 0,
+          "tip": { "label": "Flow:", "text": "Dumbbells at shoulders, squat deep, drive up and press overhead in one continuous motion. Use the momentum from the squat — no pause at the top." }
+        },
+        {
+          "name": "Kettlebell Single Leg Deadlift",
+          "sets": 3,
+          "reps": "10 reps each side",
+          "rest": 60,
+          "tip": { "label": "Balance:", "text": "Stand on one leg, hinge forward with the bell in the opposite hand. Targets glutes and hamstrings hard. Keep a proud chest and slow the eccentric down." }
+        }
+      ]
+    },
+    {
+      "name": "Finisher — KB Complex",
+      "goal": "One round, no rest between movements. Pick one kettlebell and don't put it down until the complex is done.",
+      "exercises": [
+        {
+          "name": "KB Swing",
+          "sets": 1,
+          "reps": "15 reps",
+          "rest": 0
+        },
+        {
+          "name": "KB Goblet Squat",
+          "sets": 1,
+          "reps": "10 reps",
+          "rest": 0
+        },
+        {
+          "name": "KB Clean & Press",
+          "sets": 1,
+          "reps": "8 reps each side",
+          "rest": 0
+        },
+        {
+          "name": "KB Single Leg Deadlift",
+          "sets": 1,
+          "reps": "8 reps each side",
+          "rest": 0,
+          "tip": { "label": "Finisher:", "text": "No rest between any of these. One continuous flow. This is the last thing you do — leave nothing in the tank." }
+        }
+      ]
+    },
+    {
+      "name": "Cool-Down",
+      "cooldown": true,
+      "cards": [
+        {
+          "title": "Static Stretching — 5 min",
+          "desc": "Hip flexors, hamstrings, lats, shoulders. Hold each 30–40 seconds. You hit the full body today."
+        },
+        {
+          "title": "Hydration & Protein",
+          "desc": "Weighted cardio burns glycogen fast. Prioritize protein and fast carbs within 45 minutes post-session."
+        }
+      ]
+    }
+  ]
+}
