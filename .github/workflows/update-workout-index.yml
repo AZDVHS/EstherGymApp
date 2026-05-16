@@ -1,0 +1,33 @@
+name: Update Workout Index
+
+on:
+  push:
+    paths:
+      - 'workouts/**.json'
+
+jobs:
+  update-index:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Generate index.json
+        run: |
+          cd workouts
+          # List all .json files except index.json itself, output as JSON array
+          files=$(ls *.json 2>/dev/null | grep -v '^index\.json$' | sort | python3 -c "
+          import sys, json
+          files = [l.strip() for l in sys.stdin if l.strip()]
+          print(json.dumps(files))
+          ")
+          echo "$files" > index.json
+          echo "Generated index.json: $files"
+
+      - name: Commit index.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add workouts/index.json
+          git diff --staged --quiet || git commit -m "auto: update workouts/index.json"
+          git push
