@@ -1,0 +1,86 @@
+{
+  "id": "home-legs-rack-db-30",
+  "name": "Home Legs",
+  "week": "AT HOME",
+  "weekClass": "week1",
+  "tag": "Legs",
+  "duration": "30 MIN",
+  "focus": "Quads · Glutes · Hamstrings",
+  "model": "Squat Rack + Dumbbells + Kettlebells",
+  "phases": [
+    {
+      "name": "Warm-Up",
+      "goal": "Get the joints and muscles ready before loading the squat rack. 5 minutes — don't skip it.",
+      "exercises": [
+        {
+          "name": "Bodyweight Squat",
+          "sets": 2,
+          "reps": "15 reps",
+          "rest": 0,
+          "tip": { "label": "Purpose:", "text": "Slow and controlled. 3 seconds down, pause at the bottom, drive up. This is mobility work — get the hips and knees tracking properly before adding load." }
+        },
+        {
+          "name": "Kettlebell Goblet Squat",
+          "sets": 2,
+          "reps": "10 reps",
+          "rest": 30,
+          "tip": { "label": "Load:", "text": "Use a light-to-moderate kettlebell. Elbows inside the knees at the bottom. This primes the quads and glutes before the barbell." }
+        }
+      ]
+    },
+    {
+      "name": "Main Block — Squat Rack",
+      "goal": "The anchor of the session. Two barbell movements back to back — squats for quad and glute drive, RDL for posterior chain. Keep rest tight to stay in the 30-minute window.",
+      "exercises": [
+        {
+          "name": "Barbell Back Squat",
+          "sets": 4,
+          "reps": "8–10",
+          "rest": 75,
+          "tip": { "label": "Cue:", "text": "Chest up, knees tracking over toes, drive through the whole foot. Hit parallel or below on every rep — partial reps don't count." }
+        },
+        {
+          "name": "Barbell Romanian Deadlift",
+          "sets": 3,
+          "reps": "10–12",
+          "rest": 60,
+          "tip": { "label": "3s eccentric:", "text": "Take 3 seconds on the way down. Feel the hamstring stretch at the bottom before driving the hips forward. Keep the bar close to the legs the whole way." }
+        }
+      ]
+    },
+    {
+      "name": "Dumbbell Burnout",
+      "goal": "Two dumbbell movements done back to back as a superset. No rest between exercises — rest 45 seconds after both. Finish the legs off completely.",
+      "exercises": [
+        {
+          "name": "Dumbbell Reverse Lunge",
+          "sets": 3,
+          "reps": "10/leg",
+          "rest": 0,
+          "tip": { "label": "Superset:", "text": "Step back — not forward — to reduce knee strain. Keep the front shin vertical. Go straight into the KB swings when done." }
+        },
+        {
+          "name": "Kettlebell Swing",
+          "sets": 3,
+          "reps": "15 reps",
+          "rest": 45,
+          "tip": { "label": "Drive:", "text": "Hinge at the hips — this is not a squat. Snap the hips forward to drive the bell. At 30 minutes this will be hard — push through the last few reps." }
+        }
+      ]
+    },
+    {
+      "name": "Recovery",
+      "cooldown": true,
+      "cards": [
+        {
+          "title": "Static Stretching — 4 min",
+          "desc": "Hip flexors, quads, hamstrings, glutes. Hold each 30–40 seconds. You've got a squat rack at home — use it for a supported pigeon stretch on the bench."
+        },
+        {
+          "title": "Protein Window",
+          "desc": "Hit protein within 30–45 min. Short sessions still break down muscle — recovery nutrition matters just as much."
+        }
+      ]
+    }
+  ]
+}
