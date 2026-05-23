@@ -513,7 +513,7 @@ function loadConfig() {} // no-op, kept for call compatibility
 // SUPABASE HELPERS
 // ═══════════════════════════════════════════════
 async function sbFetch(path, options = {}) {
-  // Support both JWT (eyJ...) and publishable (sb_publishable_...) key formats
+  // JWT key (eyJ...) — sends both apikey and Authorization headers
   const isJWT = CFG.key.startsWith('eyJ');
   const headers = {
     'Content-Type': 'application/json',
@@ -804,7 +804,11 @@ function restoreSession() {
     }
     const all = [...BUILTIN, ...OTHER, ...TRAINER, ...CUSTOM];
     const workout = all.find(w => w.id === saved.workoutId);
-    if (!workout) return false;
+    if (!workout) {
+      // Workout might still be loading from GitHub — don't wipe session
+      console.warn('restoreSession: workout not found yet for', saved.workoutId);
+      return false;
+    }
     // Restore state
     currentWorkout = workout;
     setData = saved.setData || {};
@@ -1188,6 +1192,7 @@ function selFin(pi,oi) {
   selectedFin[pi] = oi;
   const p = currentWorkout.phases[pi];
   document.querySelector(`#phase-${pi} .fin-block`).outerHTML = renderFin(p,pi);
+  persistSession();
 }
 
 // ═══════════════════════════════════════════════
@@ -1264,8 +1269,8 @@ function closeConfirm(e) {
 
 async function confirmFinish() {
   document.getElementById('confirm-overlay').classList.add('hidden');
-  clearPersistedSession();
-  await showComplete();
+  await showComplete();        // save first
+  clearPersistedSession();     // clear only after save completes
 }
 
 // ═══════════════════════════════════════════════
@@ -1273,45 +1278,82 @@ async function confirmFinish() {
 // ═══════════════════════════════════════════════
 async function showComplete() {
   skipRest();
-  let totalSets=0, totalVol=0, doneSets=0;
-  Object.values(setData).forEach(sets => {
-    totalSets += sets.length;
-    doneSets  += sets.filter(s=>s.done).length;
-    sets.forEach(s => { if(s.weight) totalVol += (parseFloat(s.weight)||0); });
-  });
-  const elapsed = Math.round((Date.now() - sessionStart) / 60000);
-  const volRounded = Math.round(totalVol);
 
-  document.getElementById('done-title').textContent = currentWorkout.name + ' — Done!';
-  document.getElementById('done-sub').textContent = `${currentWorkout.week} · ${currentWorkout.tag} — Rest up and come back stronger.`;
+  // ── Snapshot everything BEFORE any screen changes ─────────────────────
+  // Guards against currentWorkout being cleared by navigation
+  const snapshot = {
+    id:       currentWorkout.id,
+    name:     currentWorkout.name,
+    week:     currentWorkout.week || '',
+    tag:      currentWorkout.tag  || '',
+    duration: currentWorkout.duration || '60 MIN',
+    setData:  JSON.parse(JSON.stringify(setData)), // deep copy
+    start:    sessionStart
+  };
+
+  let doneSets = 0, totalVol = 0;
+  Object.values(snapshot.setData).forEach(sets => {
+    doneSets += sets.filter(s => s.done).length;
+    sets.forEach(s => { if (s.weight) totalVol += parseFloat(s.weight) || 0; });
+  });
+  const volRounded = Math.round(totalVol);
+  const elapsed    = Math.max(1, Math.round((Date.now() - snapshot.start) / 60000));
+
+  // ── Render complete screen ─────────────────────────────────────────────
+  document.getElementById('done-title').textContent = snapshot.name + ' — Done!';
+  document.getElementById('done-sub').textContent   =
+    `${snapshot.week}${snapshot.tag ? ' · ' + snapshot.tag : ''} — Rest up and come back stronger.`;
   document.getElementById('done-stats').innerHTML = `
     <div class="done-stat"><div class="done-stat-val">${doneSets}</div><div class="done-stat-lbl">Sets Done</div></div>
     <div class="done-stat"><div class="done-stat-val">${volRounded.toLocaleString()}</div><div class="done-stat-lbl">lbs Logged</div></div>
     <div class="done-stat"><div class="done-stat-val">${elapsed}</div><div class="done-stat-lbl">Minutes</div></div>`;
 
-  // Build share card
   buildShareCard(doneSets, volRounded, elapsed);
-
-  const statusEl = document.getElementById('save-status');
   showScreen('s-complete');
 
+  // ── Save to Supabase using snapshot (not live state) ──────────────────
+  const statusEl = document.getElementById('save-status');
   statusEl.textContent = '💾 Saving session…';
   statusEl.style.color = 'var(--text2)';
   try {
     await sbInsert('workout_sessions', {
-      workout_id: currentWorkout.id,
-      workout_name: currentWorkout.name,
-      week_label: currentWorkout.week,
-      sets_completed: doneSets,
+      workout_id:       snapshot.id,
+      workout_name:     snapshot.name,
+      week_label:       snapshot.week,
+      sets_completed:   doneSets,
       total_volume_lbs: volRounded,
       duration_minutes: elapsed,
-      set_log: setData
+      set_log:          snapshot.setData
     });
-    statusEl.textContent = '✓ Session saved to Supabase';
+    statusEl.textContent = '✓ Session saved';
     statusEl.style.color = 'var(--green)';
   } catch(e) {
-    statusEl.textContent = '✗ Save failed: ' + e.message;
+    console.error('Save failed:', e);
+    statusEl.textContent = '✗ Save failed — tap to retry';
     statusEl.style.color = 'var(--red)';
+    statusEl.style.cursor = 'pointer';
+    statusEl.onclick = async () => {
+      statusEl.textContent = '💾 Retrying…';
+      statusEl.style.color = 'var(--text2)';
+      statusEl.onclick = null;
+      try {
+        await sbInsert('workout_sessions', {
+          workout_id:       snapshot.id,
+          workout_name:     snapshot.name,
+          week_label:       snapshot.week,
+          sets_completed:   doneSets,
+          total_volume_lbs: volRounded,
+          duration_minutes: elapsed,
+          set_log:          snapshot.setData
+        });
+        statusEl.textContent = '✓ Session saved';
+        statusEl.style.color = 'var(--green)';
+        statusEl.style.cursor = '';
+      } catch(e2) {
+        statusEl.textContent = '✗ Still failing: ' + e2.message;
+        statusEl.style.color = 'var(--red)';
+      }
+    };
   }
 }
 
