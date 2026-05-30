@@ -1,0 +1,110 @@
+{
+  "id": "lower-leg-hybrid-45-moderate",
+  "name": "Lower Leg — Pre-Class",
+  "week": "HYBRID",
+  "weekClass": "week2",
+  "tag": "Legs",
+  "duration": "45 MIN",
+  "focus": "Quads · Hamstrings · Calves",
+  "model": "Moderate Intensity — Machine + Free Weight",
+  "phases": [
+    {
+      "name": "Warm-Up — Machine Activation",
+      "goal": "Light machine work to get blood into the legs without taxing the muscles before your class. Keep RPE at 5 — this is activation only.",
+      "exercises": [
+        {
+          "name": "Leg Press — Light",
+          "sets": 2,
+          "reps": "15",
+          "rest": 45,
+          "tip": { "label": "Load:", "text": "Use about 50% of your normal weight. Slow and controlled — full range of motion. This is priming the quads and glutes, not loading them." }
+        },
+        {
+          "name": "Seated Leg Curl — Light",
+          "sets": 2,
+          "reps": "15",
+          "rest": 45,
+          "tip": { "label": "Tempo:", "text": "2 seconds down, 1 second squeeze at the top. Light enough that you could do 20 reps easily. Wakes up the hamstrings without fatiguing them." }
+        }
+      ]
+    },
+    {
+      "name": "Machine Block — Moderate Load",
+      "goal": "Primary machine work. Moderate weight — you should finish each set feeling like you could do 3–4 more reps. Do not go to failure here.",
+      "exercises": [
+        {
+          "name": "Leg Extension",
+          "sets": 3,
+          "reps": "12–15",
+          "rest": 60,
+          "tip": { "label": "Control:", "text": "Squeeze hard at the top for 1 second, lower slowly over 2 seconds. RPE 6–7 max. Isolates the quad without taxing stabilisers needed for class." }
+        },
+        {
+          "name": "Lying Leg Curl",
+          "sets": 3,
+          "reps": "12–15",
+          "rest": 60,
+          "tip": { "label": "Note:", "text": "Keep hips pressed into the pad. Drive heels toward glutes and hold 1 second at peak contraction. Moderate weight — not a max effort day." }
+        },
+        {
+          "name": "Seated Calf Raise",
+          "sets": 3,
+          "reps": "15–20",
+          "rest": 45,
+          "tip": { "label": "Range:", "text": "Full stretch at the bottom, full extension at the top. Pause 1 second at peak. Calves respond to volume and range — don't cut the ROM short." }
+        }
+      ]
+    },
+    {
+      "name": "Free Weight Block — Light & Controlled",
+      "goal": "Two compound movements at moderate load. Focus is on quality of movement and muscle activation — not how much weight is on the bar. Leave fuel in the tank for class.",
+      "exercises": [
+        {
+          "name": "Dumbbell Romanian Deadlift",
+          "sets": 3,
+          "reps": "10–12",
+          "rest": 60,
+          "tip": { "label": "Key:", "text": "3-second eccentric on every rep to maximize hamstring activation with less overall load. Use dumbbells — easier to control than a barbell on a moderate day." }
+        },
+        {
+          "name": "Dumbbell Reverse Lunge",
+          "sets": 3,
+          "reps": "10/leg",
+          "rest": 60,
+          "tip": { "label": "Why reverse:", "text": "Easier on the knees than a forward lunge. Step back, lower the back knee toward the floor, drive up through the front heel. Targets quads and glutes without high spinal load." }
+        }
+      ]
+    },
+    {
+      "name": "Finisher — Pick One",
+      "goal": "One light finisher to finish the legs off. Keep it easy — class is next. If you feel fatigued skip this and go straight to cool-down.",
+      "finisher": true,
+      "options": [
+        {
+          "label": "Option A · Machine",
+          "name": "Standing Calf Raise",
+          "detail": "2 sets × 20 reps. Bodyweight or very light load. Full range, slow tempo. Finishes the calves without adding fatigue to the rest of the leg."
+        },
+        {
+          "label": "Option B · Free Weight",
+          "name": "Dumbbell Goblet Squat — Pulse",
+          "detail": "2 sets × 15 reps. Light dumbbell. 3 pulses at the bottom of each rep then drive up. Gets blood into the quads without heavy spinal load."
+        }
+      ]
+    },
+    {
+      "name": "Cool-Down",
+      "cooldown": true,
+      "cards": [
+        {
+          "title": "Dynamic Stretch — 5 min",
+          "desc": "Leg swings, hip circles, walking knee hugs. Dynamic rather than static — keeps the muscles loose and warm for your upcoming class."
+        },
+        {
+          "title": "Hydrate Before Class",
+          "desc": "Drink at least 16oz of water before your class starts. You've already worked the legs — going in dehydrated will limit performance significantly."
+        }
+      ]
+    }
+  ]
+}
